@@ -17,154 +17,177 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Security;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-
-using KeePassLib.Delegates;
-using KeePassLib.Security;
 
 namespace KeePassLib.Collections
 {
-	internal sealed class ProtectedBinarySet : IEnumerable<KeyValuePair<int, ProtectedBinary>>
-	{
-		private Dictionary<int, ProtectedBinary> m_d =
-			new Dictionary<int, ProtectedBinary>();
+    internal sealed class ProtectedBinarySet : IEnumerable<KeyValuePair<int, ProtectedBinary>>
+    {
+        private readonly bool m_bDedupAdd;
 
-		private readonly bool m_bDedupAdd;
+        private readonly Dictionary<int, ProtectedBinary> m_d =
+                    new Dictionary<int, ProtectedBinary>();
 
-		public ProtectedBinarySet(bool bDedupAdd)
-		{
-			m_bDedupAdd = bDedupAdd;
-		}
+        public ProtectedBinarySet(bool bDedupAdd)
+        {
+            m_bDedupAdd = bDedupAdd;
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return m_d.GetEnumerator();
-		}
+        public void Add(ProtectedBinary pb)
+        {
+            if (pb == null)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-		public IEnumerator<KeyValuePair<int, ProtectedBinary>> GetEnumerator()
-		{
-			return m_d.GetEnumerator();
-		}
+            if (m_bDedupAdd && (Find(pb) >= 0))
+                return; // Exists already
 
-		private int GetFreeID()
-		{
-			int i = m_d.Count;
-			while(m_d.ContainsKey(i)) { ++i; }
-			Debug.Assert(i == m_d.Count); // m_d.Count should be free
-			return i;
-		}
+            m_d[GetFreeID()] = pb;
+        }
 
-		public ProtectedBinary Get(int iID)
-		{
-			ProtectedBinary pb;
-			if(m_d.TryGetValue(iID, out pb)) return pb;
+        public void AddFrom(ProtectedBinaryDictionary d)
+        {
+            if (d == null)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-			// Debug.Assert(false); // No assert
-			return null;
-		}
+            foreach (var kvp in d)
+                Add(kvp.Value);
+        }
 
-		public int Find(ProtectedBinary pb)
-		{
-			if(pb == null) { Debug.Assert(false); return -1; }
+        public void AddFrom(PwGroup pg)
+        {
+            if (pg == null) { Debug.Assert(false); return; }
 
-			// Fast search by reference
-			foreach(KeyValuePair<int, ProtectedBinary> kvp in m_d)
-			{
-				if(object.ReferenceEquals(pb, kvp.Value))
-				{
-					Debug.Assert(pb.Equals(kvp.Value));
-					return kvp.Key;
-				}
-			}
+            bool eh(PwEntry pe)
+            {
+                if (pe == null)
+                {
+                    Debug.Assert(false);
+                    return true;
+                }
 
-			// Slow search by content
-			foreach(KeyValuePair<int, ProtectedBinary> kvp in m_d)
-			{
-				if(pb.Equals(kvp.Value)) return kvp.Key;
-			}
+                AddFrom(pe.Binaries);
+                foreach (var peHistory in pe.History)
+                {
+                    if (peHistory == null)
+                    {
+                        Debug.Assert(false);
+                        continue;
+                    }
 
-			// Debug.Assert(false); // No assert
-			return -1;
-		}
+                    AddFrom(peHistory.Binaries);
+                }
 
-		public void Set(int iID, ProtectedBinary pb)
-		{
-			if(iID < 0) { Debug.Assert(false); return; }
-			if(pb == null) { Debug.Assert(false); return; }
+                return true;
+            }
 
-			m_d[iID] = pb;
-		}
+            pg.TraverseTree(TraversalMethod.PreOrder, null, eh);
+        }
 
-		public void Add(ProtectedBinary pb)
-		{
-			if(pb == null) { Debug.Assert(false); return; }
+        public int Find(ProtectedBinary pb)
+        {
+            if (pb == null)
+            {
+                Debug.Assert(false);
+                return -1;
+            }
 
-			if(m_bDedupAdd && (Find(pb) >= 0)) return; // Exists already
+            // Fast search by reference
+            foreach (var kvp in m_d)
+            {
+                if (ReferenceEquals(pb, kvp.Value))
+                {
+                    Debug.Assert(pb.Equals(kvp.Value));
+                    return kvp.Key;
+                }
+            }
 
-			m_d[GetFreeID()] = pb;
-		}
+            // Slow search by content
+            foreach (var kvp in m_d)
+            {
+                if (pb.Equals(kvp.Value))
+                    return kvp.Key;
+            }
 
-		public void AddFrom(ProtectedBinaryDictionary d)
-		{
-			if(d == null) { Debug.Assert(false); return; }
+            return -1;
+        }
 
-			foreach(KeyValuePair<string, ProtectedBinary> kvp in d)
-			{
-				Add(kvp.Value);
-			}
-		}
+        public ProtectedBinary Get(int iID)
+        {
+            if (m_d.TryGetValue(iID, out ProtectedBinary pb))
+                return pb;
 
-		public void AddFrom(PwGroup pg)
-		{
-			if(pg == null) { Debug.Assert(false); return; }
+            return null;
+        }
 
-			EntryHandler eh = delegate(PwEntry pe)
-			{
-				if(pe == null) { Debug.Assert(false); return true; }
+        public IEnumerator<KeyValuePair<int, ProtectedBinary>> GetEnumerator()
+        {
+            return m_d.GetEnumerator();
+        }
 
-				AddFrom(pe.Binaries);
-				foreach(PwEntry peHistory in pe.History)
-				{
-					if(peHistory == null) { Debug.Assert(false); continue; }
-					AddFrom(peHistory.Binaries);
-				}
+        public void Set(int iID, ProtectedBinary pb)
+        {
+            if (iID < 0)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-				return true;
-			};
+            if (pb == null)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-			pg.TraverseTree(TraversalMethod.PreOrder, null, eh);
-		}
+            m_d[iID] = pb;
+        }
 
-		public ProtectedBinary[] ToArray()
-		{
-			int n = m_d.Count;
-			ProtectedBinary[] v = new ProtectedBinary[n];
+        public ProtectedBinary[] ToArray()
+        {
+            int n = m_d.Count;
+            ProtectedBinary[] v = new ProtectedBinary[n];
 
-			foreach(KeyValuePair<int, ProtectedBinary> kvp in m_d)
-			{
-				if((kvp.Key < 0) || (kvp.Key >= n))
-				{
-					Debug.Assert(false);
-					throw new InvalidOperationException();
-				}
+            foreach (var kvp in m_d)
+            {
+                if ((kvp.Key < 0) || (kvp.Key >= n))
+                    throw new InvalidOperationException();
 
-				v[kvp.Key] = kvp.Value;
-			}
+                v[kvp.Key] = kvp.Value;
+            }
 
-			for(int i = 0; i < n; ++i)
-			{
-				if(v[i] == null)
-				{
-					Debug.Assert(false);
-					throw new InvalidOperationException();
-				}
-			}
+            for (int i = 0; i < n; ++i)
+            {
+                if (v[i] == null)
+                    throw new InvalidOperationException();
+            }
 
-			return v;
-		}
-	}
+            return v;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_d.GetEnumerator();
+        }
+
+        private int GetFreeID()
+        {
+            int i = m_d.Count;
+
+            while (m_d.ContainsKey(i)) 
+                ++i; 
+
+            Debug.Assert(i == m_d.Count); // m_d.Count should be free
+
+            return i;
+        }
+    }
 }

@@ -17,156 +17,162 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Interfaces;
+using KeePassLib.Security;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
-
-using KeePassLib.Interfaces;
-using KeePassLib.Security;
-
-#if KeePassLibSD
-using KeePassLibSD;
-#endif
+using System.Text;
 
 namespace KeePassLib.Collections
 {
-	/// <summary>
-	/// A list of <c>ProtectedBinary</c> objects (dictionary).
-	/// </summary>
-	public sealed class ProtectedBinaryDictionary :
-		IDeepCloneable<ProtectedBinaryDictionary>,
-		IEnumerable<KeyValuePair<string, ProtectedBinary>>
-	{
-		private SortedDictionary<string, ProtectedBinary> m_vBinaries =
-			new SortedDictionary<string, ProtectedBinary>();
+    /// <summary>
+    /// A list of <c>ProtectedBinary</c> objects (dictionary).
+    /// </summary>
+    public sealed class ProtectedBinaryDictionary :
+        IDeepCloneable<ProtectedBinaryDictionary>,
+        IEnumerable<KeyValuePair<string, ProtectedBinary>>
+    {
+        private readonly SortedDictionary<string, ProtectedBinary> m_vBinaries =
+            new SortedDictionary<string, ProtectedBinary>();
 
-		/// <summary>
-		/// Get the number of binaries in this entry.
-		/// </summary>
-		public uint UCount
-		{
-			get { return (uint)m_vBinaries.Count; }
-		}
+        /// <summary>
+        /// Construct a new list of protected binaries.
+        /// </summary>
+        public ProtectedBinaryDictionary()
+        {
+        }
 
-		/// <summary>
-		/// Construct a new list of protected binaries.
-		/// </summary>
-		public ProtectedBinaryDictionary()
-		{
-		}
+        /// <summary>
+        /// Get the number of binaries in this entry.
+        /// </summary>
+        public uint UCount => (uint)m_vBinaries.Count;
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return m_vBinaries.GetEnumerator();
-		}
+        public void Clear() => m_vBinaries.Clear();
 
-		public IEnumerator<KeyValuePair<string, ProtectedBinary>> GetEnumerator()
-		{
-			return m_vBinaries.GetEnumerator();
-		}
+        /// <summary>
+        /// Clone the current <c>ProtectedBinaryList</c> object, including all
+        /// stored protected strings.
+        /// </summary>
+        /// <returns>New <c>ProtectedBinaryList</c> object.</returns>
+        public ProtectedBinaryDictionary CloneDeep()
+        {
+            var plNew = new ProtectedBinaryDictionary();
 
-		public void Clear()
-		{
-			m_vBinaries.Clear();
-		}
+            foreach (var kvpBin in m_vBinaries)
+            {
+                // ProtectedBinary objects are immutable
+                plNew.Set(kvpBin.Key, kvpBin.Value);
+            }
 
-		/// <summary>
-		/// Clone the current <c>ProtectedBinaryList</c> object, including all
-		/// stored protected strings.
-		/// </summary>
-		/// <returns>New <c>ProtectedBinaryList</c> object.</returns>
-		public ProtectedBinaryDictionary CloneDeep()
-		{
-			ProtectedBinaryDictionary plNew = new ProtectedBinaryDictionary();
+            return plNew;
+        }
 
-			foreach(KeyValuePair<string, ProtectedBinary> kvpBin in m_vBinaries)
-			{
-				// ProtectedBinary objects are immutable
-				plNew.Set(kvpBin.Key, kvpBin.Value);
-			}
+        public bool EqualsDictionary(ProtectedBinaryDictionary dict)
+        {
+            if (dict == null)
+            {
+                Debug.Assert(false);
+                return false;
+            }
 
-			return plNew;
-		}
+            if (m_vBinaries.Count != dict.m_vBinaries.Count)
+                return false;
 
-		public bool EqualsDictionary(ProtectedBinaryDictionary dict)
-		{
-			if(dict == null) { Debug.Assert(false); return false; }
+            foreach (KeyValuePair<string, ProtectedBinary> kvp in m_vBinaries)
+            {
+                var pb = dict.Get(kvp.Key);
+                if (pb == null)
+                    return false;
 
-			if(m_vBinaries.Count != dict.m_vBinaries.Count) return false;
+                if (!pb.Equals(kvp.Value))
+                    return false;
+            }
 
-			foreach(KeyValuePair<string, ProtectedBinary> kvp in m_vBinaries)
-			{
-				ProtectedBinary pb = dict.Get(kvp.Key);
-				if(pb == null) return false;
-				if(!pb.Equals(kvp.Value)) return false;
-			}
+            return true;
+        }
 
-			return true;
-		}
+        /// <summary>
+        /// Get one of the stored binaries.
+        /// </summary>
+        /// <param name="strName">Binary identifier.</param>
+        /// <returns>Protected binary. If the binary identified by
+        /// <paramref name="strName" /> cannot be found, the function
+        /// returns <c>null</c>.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown if the input
+        /// parameter is <c>null</c>.</exception>
+        public ProtectedBinary Get(string strName)
+        {
+            if (strName == null)
+                throw new ArgumentNullException("strName");
 
-		/// <summary>
-		/// Get one of the stored binaries.
-		/// </summary>
-		/// <param name="strName">Binary identifier.</param>
-		/// <returns>Protected binary. If the binary identified by
-		/// <paramref name="strName" /> cannot be found, the function
-		/// returns <c>null</c>.</returns>
-		/// <exception cref="System.ArgumentNullException">Thrown if the input
-		/// parameter is <c>null</c>.</exception>
-		public ProtectedBinary Get(string strName)
-		{
-			Debug.Assert(strName != null); if(strName == null) throw new ArgumentNullException("strName");
+            if (m_vBinaries.TryGetValue(strName, out var pb))
+                return pb;
 
-			ProtectedBinary pb;
-			if(m_vBinaries.TryGetValue(strName, out pb)) return pb;
+            return null;
+        }
 
-			return null;
-		}
+        public IEnumerator<KeyValuePair<string, ProtectedBinary>> GetEnumerator()
+        {
+            return m_vBinaries.GetEnumerator();
+        }
 
-		/// <summary>
-		/// Set a binary object.
-		/// </summary>
-		/// <param name="strField">Identifier of the binary field to modify.</param>
-		/// <param name="pbNewValue">New value. This parameter must not be <c>null</c>.</param>
-		/// <exception cref="System.ArgumentNullException">Thrown if any of the input
-		/// parameters is <c>null</c>.</exception>
-		public void Set(string strField, ProtectedBinary pbNewValue)
-		{
-			Debug.Assert(strField != null); if(strField == null) throw new ArgumentNullException("strField");
-			Debug.Assert(pbNewValue != null); if(pbNewValue == null) throw new ArgumentNullException("pbNewValue");
+        public string KeysToString()
+        {
+            if (m_vBinaries.Count == 0)
+                return string.Empty;
 
-			m_vBinaries[strField] = pbNewValue;
-		}
+            var sb = new StringBuilder();
 
-		/// <summary>
-		/// Remove a binary object.
-		/// </summary>
-		/// <param name="strField">Identifier of the binary field to remove.</param>
-		/// <returns>Returns <c>true</c> if the object has been successfully
-		/// removed, otherwise <c>false</c>.</returns>
-		/// <exception cref="System.ArgumentNullException">Thrown if the input parameter
-		/// is <c>null</c>.</exception>
-		public bool Remove(string strField)
-		{
-			Debug.Assert(strField != null); if(strField == null) throw new ArgumentNullException("strField");
+            foreach (var kvp in m_vBinaries)
+            {
+                if (sb.Length > 0)
+                    sb.Append(", ");
 
-			return m_vBinaries.Remove(strField);
-		}
+                sb.Append(kvp.Key);
+            }
 
-		public string KeysToString()
-		{
-			if(m_vBinaries.Count == 0) return string.Empty;
+            return sb.ToString();
+        }
 
-			StringBuilder sb = new StringBuilder();
-			foreach(KeyValuePair<string, ProtectedBinary> kvp in m_vBinaries)
-			{
-				if(sb.Length > 0) sb.Append(", ");
-				sb.Append(kvp.Key);
-			}
+        /// <summary>
+        /// Remove a binary object.
+        /// </summary>
+        /// <param name="strField">Identifier of the binary field to remove.</param>
+        /// <returns>Returns <c>true</c> if the object has been successfully
+        /// removed, otherwise <c>false</c>.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown if the input parameter
+        /// is <c>null</c>.</exception>
+        public bool Remove(string strField)
+        {
+            if (strField == null)
+                throw new ArgumentNullException("strField");
 
-			return sb.ToString();
-		}
-	}
+            return m_vBinaries.Remove(strField);
+        }
+
+        /// <summary>
+        /// Set a binary object.
+        /// </summary>
+        /// <param name="strField">Identifier of the binary field to modify.</param>
+        /// <param name="pbNewValue">New value. This parameter must not be <c>null</c>.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown if any of the input
+        /// parameters is <c>null</c>.</exception>
+        public void Set(string strField, ProtectedBinary pbNewValue)
+        {
+            if (strField == null)
+                throw new ArgumentNullException("strField");
+
+            if (pbNewValue == null)
+                throw new ArgumentNullException("pbNewValue");
+
+            m_vBinaries[strField] = pbNewValue;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_vBinaries.GetEnumerator();
+        }
+    }
 }

@@ -17,228 +17,221 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using KeePassLib.Interfaces;
-
 namespace KeePassLib.Collections
 {
-	[Flags]
-	public enum AutoTypeObfuscationOptions
-	{
-		None = 0,
-		UseClipboard = 1
-	}
+    [Flags]
+    public enum AutoTypeObfuscationOptions
+    {
+        None = 0,
+        UseClipboard = 1
+    }
 
-	public sealed class AutoTypeAssociation : IEquatable<AutoTypeAssociation>,
-		IDeepCloneable<AutoTypeAssociation>
-	{
-		private string m_strWindow = string.Empty;
-		public string WindowName
-		{
-			get { return m_strWindow; }
-			set
-			{
-				Debug.Assert(value != null); if(value == null) throw new ArgumentNullException("value");
-				m_strWindow = value;
-			}
-		}
+    public sealed class AutoTypeAssociation : IEquatable<AutoTypeAssociation>,
+        IDeepCloneable<AutoTypeAssociation>
+    {
+        private string m_strSequence = string.Empty;
+        private string m_strWindow = string.Empty;
 
-		private string m_strSequence = string.Empty;
-		public string Sequence
-		{
-			get { return m_strSequence; }
-			set
-			{
-				Debug.Assert(value != null); if(value == null) throw new ArgumentNullException("value");
-				m_strSequence = value;
-			}
-		}
+        public AutoTypeAssociation()
+        { }
 
-		public AutoTypeAssociation() { }
+        public AutoTypeAssociation(string strWindow, string strSeq)
+        {
+            m_strWindow = strWindow ?? throw new ArgumentNullException("strWindow");
+            m_strSequence = strSeq ?? throw new ArgumentNullException("strSeq");
+        }
 
-		public AutoTypeAssociation(string strWindow, string strSeq)
-		{
-			if(strWindow == null) throw new ArgumentNullException("strWindow");
-			if(strSeq == null) throw new ArgumentNullException("strSeq");
+        public string Sequence
+        {
+            get
+            {
+                return m_strSequence;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+                m_strSequence = value;
+            }
+        }
 
-			m_strWindow = strWindow;
-			m_strSequence = strSeq;
-		}
+        public string WindowName
+        {
+            get
+            {
+                return m_strWindow;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
 
-		public bool Equals(AutoTypeAssociation other)
-		{
-			if(other == null) return false;
+                m_strWindow = value;
+            }
+        }
 
-			if(m_strWindow != other.m_strWindow) return false;
-			if(m_strSequence != other.m_strSequence) return false;
+        public AutoTypeAssociation CloneDeep() => (AutoTypeAssociation)MemberwiseClone();
 
-			return true;
-		}
+        public bool Equals(AutoTypeAssociation other)
+        {
+            if (other == null)
+                return false;
 
-		public AutoTypeAssociation CloneDeep()
-		{
-			return (AutoTypeAssociation)this.MemberwiseClone();
-		}
-	}
+            if (m_strWindow != other.m_strWindow)
+                return false;
 
-	/// <summary>
-	/// A list of auto-type associations.
-	/// </summary>
-	public sealed class AutoTypeConfig : IEquatable<AutoTypeConfig>,
-		IDeepCloneable<AutoTypeConfig>
-	{
-		private bool m_bEnabled = true;
-		private AutoTypeObfuscationOptions m_atooObfuscation =
-			AutoTypeObfuscationOptions.None;
-		private string m_strDefaultSequence = string.Empty;
-		private List<AutoTypeAssociation> m_lWindowAssocs =
-			new List<AutoTypeAssociation>();
+            if (m_strSequence != other.m_strSequence)
+                return false;
 
-		/// <summary>
-		/// Specify whether auto-type is enabled or not.
-		/// </summary>
-		public bool Enabled
-		{
-			get { return m_bEnabled; }
-			set { m_bEnabled = value; }
-		}
+            return true;
+        }
+    }
 
-		/// <summary>
-		/// Specify whether the typing should be obfuscated.
-		/// </summary>
-		public AutoTypeObfuscationOptions ObfuscationOptions
-		{
-			get { return m_atooObfuscation; }
-			set { m_atooObfuscation = value; }
-		}
+    /// <summary>
+    /// A list of auto-type associations.
+    /// </summary>
+    public sealed class AutoTypeConfig : IEquatable<AutoTypeConfig>,
+        IDeepCloneable<AutoTypeConfig>
+    {
+        private readonly List<AutoTypeAssociation> m_lWindowAssocs =
+            new List<AutoTypeAssociation>();
 
-		/// <summary>
-		/// The default keystroke sequence that is auto-typed if
-		/// no matching window is found in the <c>Associations</c>
-		/// container.
-		/// </summary>
-		public string DefaultSequence
-		{
-			get { return m_strDefaultSequence; }
-			set
-			{
-				Debug.Assert(value != null); if(value == null) throw new ArgumentNullException("value");
-				m_strDefaultSequence = value;
-			}
-		}
+        private string m_strDefaultSequence = string.Empty;
 
-		/// <summary>
-		/// Get all auto-type window/keystroke sequence pairs.
-		/// </summary>
-		public IEnumerable<AutoTypeAssociation> Associations
-		{
-			get { return m_lWindowAssocs; }
-		}
+        /// <summary>
+        /// Construct a new auto-type associations list.
+        /// </summary>
+        public AutoTypeConfig()
+        { }
 
-		public int AssociationsCount
-		{
-			get { return m_lWindowAssocs.Count; }
-		}
+        /// <summary>
+        /// Get all auto-type window/keystroke sequence pairs.
+        /// </summary>
+        public IEnumerable<AutoTypeAssociation> Associations => m_lWindowAssocs;
 
-		/// <summary>
-		/// Construct a new auto-type associations list.
-		/// </summary>
-		public AutoTypeConfig()
-		{
-		}
+        public int AssociationsCount => m_lWindowAssocs.Count;
 
-		/// <summary>
-		/// Remove all associations.
-		/// </summary>
-		public void Clear()
-		{
-			m_lWindowAssocs.Clear();
-		}
+        /// <summary>
+        /// The default keystroke sequence that is auto-typed if
+        /// no matching window is found in the <c>Associations</c>
+        /// container.
+        /// </summary>
+        public string DefaultSequence
+        {
+            get
+            {
+                return m_strDefaultSequence;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
 
-		/// <summary>
-		/// Clone the auto-type associations list.
-		/// </summary>
-		/// <returns>New, cloned object.</returns>
-		public AutoTypeConfig CloneDeep()
-		{
-			AutoTypeConfig newCfg = new AutoTypeConfig();
+                m_strDefaultSequence = value;
+            }
+        }
 
-			newCfg.m_bEnabled = m_bEnabled;
-			newCfg.m_atooObfuscation = m_atooObfuscation;
-			newCfg.m_strDefaultSequence = m_strDefaultSequence;
+        /// <summary>
+        /// Specify whether auto-type is enabled or not.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
 
-			foreach(AutoTypeAssociation a in m_lWindowAssocs)
-				newCfg.Add(a.CloneDeep());
+        /// <summary>
+        /// Specify whether the typing should be obfuscated.
+        /// </summary>
+        public AutoTypeObfuscationOptions ObfuscationOptions { get; set; } = AutoTypeObfuscationOptions.None;
 
-			return newCfg;
-		}
+        public void Add(AutoTypeAssociation a)
+        {
+            if (a == null)
+                throw new ArgumentNullException("a");
 
-		public bool Equals(AutoTypeConfig other)
-		{
-			if(other == null) { Debug.Assert(false); return false; }
+            m_lWindowAssocs.Add(a);
+        }
 
-			if(m_bEnabled != other.m_bEnabled) return false;
-			if(m_atooObfuscation != other.m_atooObfuscation) return false;
-			if(m_strDefaultSequence != other.m_strDefaultSequence) return false;
+        /// <summary>
+        /// Remove all associations.
+        /// </summary>
+        public void Clear() => m_lWindowAssocs.Clear();
 
-			if(m_lWindowAssocs.Count != other.m_lWindowAssocs.Count) return false;
-			for(int i = 0; i < m_lWindowAssocs.Count; ++i)
-			{
-				if(!m_lWindowAssocs[i].Equals(other.m_lWindowAssocs[i]))
-					return false;
-			}
+        /// <summary>
+        /// Clone the auto-type associations list.
+        /// </summary>
+        /// <returns>New, cloned object.</returns>
+        public AutoTypeConfig CloneDeep()
+        {
+            AutoTypeConfig newCfg = new AutoTypeConfig
+            {
+                Enabled = Enabled,
+                ObfuscationOptions = ObfuscationOptions,
+                m_strDefaultSequence = m_strDefaultSequence
+            };
 
-			return true;
-		}
+            foreach (AutoTypeAssociation a in m_lWindowAssocs)
+                newCfg.Add(a.CloneDeep());
 
-		public AutoTypeAssociation GetAt(int iIndex)
-		{
-			if((iIndex < 0) || (iIndex >= m_lWindowAssocs.Count))
-				throw new ArgumentOutOfRangeException("iIndex");
+            return newCfg;
+        }
 
-			return m_lWindowAssocs[iIndex];
-		}
+        public bool Equals(AutoTypeConfig other)
+        {
+            if (other == null)
+            {
+                Debug.Assert(false);
+                return false;
+            }
 
-		public void Add(AutoTypeAssociation a)
-		{
-			if(a == null) { Debug.Assert(false); throw new ArgumentNullException("a"); }
+            if (Enabled != other.Enabled)
+                return false;
 
-			m_lWindowAssocs.Add(a);
-		}
+            if (ObfuscationOptions != other.ObfuscationOptions)
+                return false;
 
-		public void Insert(int iIndex, AutoTypeAssociation a)
-		{
-			if((iIndex < 0) || (iIndex > m_lWindowAssocs.Count))
-				throw new ArgumentOutOfRangeException("iIndex");
-			if(a == null) { Debug.Assert(false); throw new ArgumentNullException("a"); }
+            if (m_strDefaultSequence != other.m_strDefaultSequence)
+                return false;
 
-			m_lWindowAssocs.Insert(iIndex, a);
-		}
+            if (m_lWindowAssocs.Count != other.m_lWindowAssocs.Count)
+                return false;
 
-		public void RemoveAt(int iIndex)
-		{
-			if((iIndex < 0) || (iIndex >= m_lWindowAssocs.Count))
-				throw new ArgumentOutOfRangeException("iIndex");
+            for (int i = 0; i < m_lWindowAssocs.Count; ++i)
+            {
+                if (!m_lWindowAssocs[i].Equals(other.m_lWindowAssocs[i]))
+                    return false;
+            }
 
-			m_lWindowAssocs.RemoveAt(iIndex);
-		}
+            return true;
+        }
 
-		// public void Sort()
-		// {
-		//	m_lWindowAssocs.Sort(AutoTypeConfig.AssocCompareFn);
-		// }
+        public AutoTypeAssociation GetAt(int iIndex)
+        {
+            if ((iIndex < 0) || (iIndex >= m_lWindowAssocs.Count))
+                throw new ArgumentOutOfRangeException("iIndex");
 
-		// private static int AssocCompareFn(AutoTypeAssociation x,
-		//	AutoTypeAssociation y)
-		// {
-		//	if(x == null) { Debug.Assert(false); return ((y == null) ? 0 : -1); }
-		//	if(y == null) { Debug.Assert(false); return 1; }
-		//	int cn = x.WindowName.CompareTo(y.WindowName);
-		//	if(cn != 0) return cn;
-		//	return x.Sequence.CompareTo(y.Sequence);
-		// }
-	}
+            return m_lWindowAssocs[iIndex];
+        }
+
+        public void Insert(int iIndex, AutoTypeAssociation a)
+        {
+            if ((iIndex < 0) || (iIndex > m_lWindowAssocs.Count))
+                throw new ArgumentOutOfRangeException("iIndex");
+
+            if (a == null)
+                throw new ArgumentNullException("a");
+
+            m_lWindowAssocs.Insert(iIndex, a);
+        }
+
+        public void RemoveAt(int iIndex)
+        {
+            if ((iIndex < 0) || (iIndex >= m_lWindowAssocs.Count))
+                throw new ArgumentOutOfRangeException("iIndex");
+
+            m_lWindowAssocs.RemoveAt(iIndex);
+        }
+    }
 }

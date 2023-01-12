@@ -17,155 +17,163 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Interfaces;
+using KeePassLib.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-
-using KeePassLib.Interfaces;
-using KeePassLib.Utility;
-
-#if KeePassLibSD
-using KeePassLibSD;
-#endif
 
 namespace KeePassLib.Collections
 {
-	public sealed class StringDictionaryEx : IDeepCloneable<StringDictionaryEx>,
-		IEnumerable<KeyValuePair<string, string>>, IEquatable<StringDictionaryEx>
-	{
-		private SortedDictionary<string, string> m_d =
-			new SortedDictionary<string, string>();
+    public sealed class StringDictionaryEx : IDeepCloneable<StringDictionaryEx>,
+        IEnumerable<KeyValuePair<string, string>>, IEquatable<StringDictionaryEx>
+    {
+        private readonly SortedDictionary<string, string> m_d = new SortedDictionary<string, string>();
 
-		// Non-null if and only if last mod. times should be remembered
-		private Dictionary<string, DateTime> m_dLastMod = null;
+        // Non-null if and only if last mod. times should be remembered
+        private Dictionary<string, DateTime> m_dLastMod = null;
 
-		public int Count
-		{
-			get { return m_d.Count; }
-		}
+        public StringDictionaryEx()
+        {
+        }
 
-		public StringDictionaryEx()
-		{
-		}
+        internal StringDictionaryEx(bool bRememberLastMod)
+        {
+            if (bRememberLastMod)
+                m_dLastMod = new Dictionary<string, DateTime>();
+        }
 
-		internal StringDictionaryEx(bool bRememberLastMod)
-		{
-			if(bRememberLastMod) m_dLastMod = new Dictionary<string, DateTime>();
-		}
+        public int Count => m_d.Count;
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return m_d.GetEnumerator();
-		}
+        public StringDictionaryEx CloneDeep()
+        {
+            var sdNew = new StringDictionaryEx();
 
-		public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
-		{
-			return m_d.GetEnumerator();
-		}
+            foreach (var kvp in m_d)
+                sdNew.m_d[kvp.Key] = kvp.Value;
 
-		public StringDictionaryEx CloneDeep()
-		{
-			StringDictionaryEx sdNew = new StringDictionaryEx();
+            if (m_dLastMod != null)
+                sdNew.m_dLastMod = new Dictionary<string, DateTime>(m_dLastMod);
 
-			foreach(KeyValuePair<string, string> kvp in m_d)
-				sdNew.m_d[kvp.Key] = kvp.Value;
+            Debug.Assert(Equals(sdNew));
+            return sdNew;
+        }
 
-			if(m_dLastMod != null)
-				sdNew.m_dLastMod = new Dictionary<string, DateTime>(m_dLastMod);
+        public bool Equals(StringDictionaryEx sdOther)
+        {
+            if (sdOther == null)
+            { 
+                Debug.Assert(false); 
+                return false;
+            }
 
-			Debug.Assert(Equals(sdNew));
-			return sdNew;
-		}
+            if (m_d.Count != sdOther.m_d.Count)
+                return false;
 
-		public bool Equals(StringDictionaryEx sdOther)
-		{
-			if(sdOther == null) { Debug.Assert(false); return false; }
+            foreach (var kvp in sdOther.m_d)
+            {
+                var str = Get(kvp.Key);
 
-			if(m_d.Count != sdOther.m_d.Count) return false;
+                if ((str == null) || (str != kvp.Value))
+                    return false;
+            }
 
-			foreach(KeyValuePair<string, string> kvp in sdOther.m_d)
-			{
-				string str = Get(kvp.Key);
-				if((str == null) || (str != kvp.Value)) return false;
-			}
+            var cLastModT = ((m_dLastMod != null) ? m_dLastMod.Count : -1);
+            var cLastModO = ((sdOther.m_dLastMod != null) ? sdOther.m_dLastMod.Count : -1);
 
-			int cLastModT = ((m_dLastMod != null) ? m_dLastMod.Count : -1);
-			int cLastModO = ((sdOther.m_dLastMod != null) ? sdOther.m_dLastMod.Count : -1);
-			if(cLastModT != cLastModO) return false;
+            if (cLastModT != cLastModO)
+                return false;
 
-			if(m_dLastMod != null)
-			{
-				foreach(KeyValuePair<string, DateTime> kvp in sdOther.m_dLastMod)
-				{
-					DateTime? odt = GetLastModificationTime(kvp.Key);
-					if(!odt.HasValue) return false;
-					if(!TimeUtil.EqualsFloor(odt.Value, kvp.Value)) return false;
-				}
-			}
+            if (m_dLastMod != null)
+            {
+                foreach (var kvp in sdOther.m_dLastMod)
+                {
+                    var odt = GetLastModificationTime(kvp.Key);
+                    if (!odt.HasValue)
+                        return false;
 
-			return true;
-		}
+                    if (!TimeUtil.EqualsFloor(odt.Value, kvp.Value))
+                        return false;
+                }
+            }
 
-		public string Get(string strName)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
+            return true;
+        }
 
-			string str;
-			m_d.TryGetValue(strName, out str);
-			return str;
-		}
+        public bool Exists(string strName)
+        {
+            if (strName == null) 
+                throw new ArgumentNullException("strName"); 
 
-		internal DateTime? GetLastModificationTime(string strName)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
+            return m_d.ContainsKey(strName);
+        }
 
-			if(m_dLastMod == null) return null;
+        public string Get(string strName)
+        {
+            if (strName == null)
+                throw new ArgumentNullException("strName");
 
-			DateTime dt;
-			if(m_dLastMod.TryGetValue(strName, out dt)) return dt;
-			return null;
-		}
+            m_d.TryGetValue(strName, out var str);
 
-		public bool Exists(string strName)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
+            return str;
+        }
 
-			return m_d.ContainsKey(strName);
-		}
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => m_d.GetEnumerator();
 
-		public void Set(string strName, string strValue)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
-			if(strValue == null) { Debug.Assert(false); throw new ArgumentNullException("strValue"); }
+        public bool Remove(string strName)
+        {
+            if (strName == null) 
+                throw new ArgumentNullException("strName");
 
-			m_d[strName] = strValue;
+            m_dLastMod?.Remove(strName);
 
-			if(m_dLastMod != null) m_dLastMod[strName] = DateTime.UtcNow;
-		}
+            return m_d.Remove(strName);
+        }
 
-		internal void Set(string strName, string strValue, DateTime? odtLastMod)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
-			if(strValue == null) { Debug.Assert(false); throw new ArgumentNullException("strValue"); }
+        public void Set(string strName, string strValue)
+        {
+            if (strName == null)
+                throw new ArgumentNullException("strName");
+            if (strValue == null) 
+                throw new ArgumentNullException("strValue"); 
 
-			m_d[strName] = strValue;
+            m_d[strName] = strValue;
 
-			if(m_dLastMod != null)
-			{
-				if(odtLastMod.HasValue) m_dLastMod[strName] = odtLastMod.Value;
-				else m_dLastMod.Remove(strName);
-			}
-		}
+            if (m_dLastMod != null) m_dLastMod[strName] = DateTime.UtcNow;
+        }
 
-		public bool Remove(string strName)
-		{
-			if(strName == null) { Debug.Assert(false); throw new ArgumentNullException("strName"); }
+        IEnumerator IEnumerable.GetEnumerator() => m_d.GetEnumerator();
 
-			if(m_dLastMod != null) m_dLastMod.Remove(strName);
+        internal DateTime? GetLastModificationTime(string strName)
+        {
+            if (strName == null) 
+                throw new ArgumentNullException("strName");
 
-			return m_d.Remove(strName);
-		}
-	}
+            if (m_dLastMod == null) 
+                return null;
+
+            if (m_dLastMod.TryGetValue(strName, out var dt)) 
+                return dt;
+
+            return null;
+        }
+
+        internal void Set(string strName, string strValue, DateTime? odtLastMod)
+        {
+            if (strName == null) 
+                throw new ArgumentNullException("strName");
+
+            if (strValue == null)
+                throw new ArgumentNullException("strValue");
+
+            m_d[strName] = strValue;
+
+            if (m_dLastMod != null)
+            {
+                if (odtLastMod.HasValue) m_dLastMod[strName] = odtLastMod.Value;
+                else m_dLastMod.Remove(strName);
+            }
+        }
+    }
 }

@@ -17,216 +17,204 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Delegates;
+using KeePassLib.Interfaces;
+using KeePassLib.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-
-using KeePassLib.Delegates;
-using KeePassLib.Interfaces;
-using KeePassLib.Utility;
-
-#if KeePassLibSD
-using KeePassLibSD;
-#endif
 
 namespace KeePassLib.Collections
 {
-	public sealed class PwObjectPool
-	{
-		private SortedDictionary<PwUuid, IStructureItem> m_dict =
-			new SortedDictionary<PwUuid, IStructureItem>();
+    public sealed class PwObjectPool
+    {
+        private readonly SortedDictionary<PwUuid, IStructureItem> m_dict = new SortedDictionary<PwUuid, IStructureItem>();
 
-		public static PwObjectPool FromGroupRecursive(PwGroup pgRoot, bool bEntries)
-		{
-			if(pgRoot == null) throw new ArgumentNullException("pgRoot");
+        public static PwObjectPool FromGroupRecursive(PwGroup pgRoot, bool bEntries)
+        {
+            if (pgRoot == null)
+                throw new ArgumentNullException("pgRoot");
 
-			PwObjectPool p = new PwObjectPool();
+            var p = new PwObjectPool();
 
-			if(!bEntries) p.m_dict[pgRoot.Uuid] = pgRoot;
-			GroupHandler gh = delegate(PwGroup pg)
-			{
-				p.m_dict[pg.Uuid] = pg;
-				return true;
-			};
+            if (!bEntries)
+                p.m_dict[pgRoot.Uuid] = pgRoot;
 
-			EntryHandler eh = delegate(PwEntry pe)
-			{
-				p.m_dict[pe.Uuid] = pe;
-				return true;
-			};
+            bool gh(PwGroup pg)
+            {
+                p.m_dict[pg.Uuid] = pg;
+                return true;
+            }
 
-			pgRoot.TraverseTree(TraversalMethod.PreOrder, bEntries ? null : gh,
-				bEntries ? eh : null);
-			return p;
-		}
+            bool eh(PwEntry pe)
+            {
+                p.m_dict[pe.Uuid] = pe;
+                return true;
+            }
 
-		public IStructureItem Get(PwUuid pwUuid)
-		{
-			IStructureItem pItem;
-			m_dict.TryGetValue(pwUuid, out pItem);
-			return pItem;
-		}
+            pgRoot.TraverseTree(TraversalMethod.PreOrder, bEntries ? null : (GroupHandler)gh,
+                bEntries ? (EntryHandler)eh : null);
 
-		public bool ContainsOnlyType(Type t)
-		{
-			foreach(KeyValuePair<PwUuid, IStructureItem> kvp in m_dict)
-			{
-				if(kvp.Value.GetType() != t) return false;
-			}
+            return p;
+        }
 
-			return true;
-		}
-	}
+        public bool ContainsOnlyType(Type t)
+        {
+            foreach (var kvp in m_dict)
+            {
+                if (kvp.Value.GetType() != t)
+                    return false;
+            }
 
-	internal sealed class PwObjectPoolEx
-	{
-		private Dictionary<PwUuid, ulong> m_dUuidToId =
-			new Dictionary<PwUuid, ulong>();
-		private Dictionary<ulong, IStructureItem> m_dIdToItem =
-			new Dictionary<ulong, IStructureItem>();
+            return true;
+        }
 
-		private PwObjectPoolEx()
-		{
-		}
+        public IStructureItem Get(PwUuid pwUuid)
+        {
+            m_dict.TryGetValue(pwUuid, out var pItem);
+            return pItem;
+        }
+    }
 
-		public static PwObjectPoolEx FromGroup(PwGroup pg)
-		{
-			PwObjectPoolEx p = new PwObjectPoolEx();
+    internal sealed class PwObjectBlock<T> : IEnumerable<T>
+        where T : class, ITimeLogger, IStructureItem, IDeepCloneable<T>
+    {
+        private readonly List<T> m_l = new List<T>();
+        private DateTime m_dtLocationChanged = TimeUtil.SafeMinValueUtc;
+        private PwObjectPoolEx m_poolAssoc = null;
 
-			if(pg == null) { Debug.Assert(false); return p; }
+        public PwObjectBlock()
+        {
+        }
 
-			ulong uFreeId = 2; // 0 = "not found", 1 is a hole
+        public DateTime LocationChanged => m_dtLocationChanged;
+        public PwObjectPoolEx PoolAssoc => m_poolAssoc;
+        public T PrimaryItem => (m_l.Count > 0) ? m_l[0] : null;
 
-			p.m_dUuidToId[pg.Uuid] = uFreeId;
-			p.m_dIdToItem[uFreeId] = pg;
-			uFreeId += 2; // Make hole
+        public void Add(T t, DateTime dtLoc, PwObjectPoolEx pool)
+        {
+            if (t == null)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-			p.AddGroupRec(pg, ref uFreeId);
-			return p;
-		}
+            m_l.Add(t);
 
-		private void AddGroupRec(PwGroup pg, ref ulong uFreeId)
-		{
-			if(pg == null) { Debug.Assert(false); return; }
+            if (dtLoc > m_dtLocationChanged)
+            {
+                m_dtLocationChanged = dtLoc;
+                m_poolAssoc = pool;
+            }
+        }
 
-			ulong uId = uFreeId;
+        public IEnumerator<T> GetEnumerator() => m_l.GetEnumerator();
 
-			// Consecutive entries must have consecutive IDs
-			foreach(PwEntry pe in pg.Entries)
-			{
-				Debug.Assert(!m_dUuidToId.ContainsKey(pe.Uuid));
-				Debug.Assert(!m_dIdToItem.ContainsValue(pe));
+        IEnumerator IEnumerable.GetEnumerator() => m_l.GetEnumerator();
+    }
 
-				m_dUuidToId[pe.Uuid] = uId;
-				m_dIdToItem[uId] = pe;
-				++uId;
-			}
-			++uId; // Make hole
+    internal sealed class PwObjectPoolEx
+    {
+        private readonly Dictionary<ulong, IStructureItem> m_dIdToItem = new Dictionary<ulong, IStructureItem>();
+        private readonly Dictionary<PwUuid, ulong> m_dUuidToId = new Dictionary<PwUuid, ulong>();
 
-			// Consecutive groups must have consecutive IDs
-			foreach(PwGroup pgSub in pg.Groups)
-			{
-				Debug.Assert(!m_dUuidToId.ContainsKey(pgSub.Uuid));
-				Debug.Assert(!m_dIdToItem.ContainsValue(pgSub));
+        private PwObjectPoolEx()
+        {
+        }
 
-				m_dUuidToId[pgSub.Uuid] = uId;
-				m_dIdToItem[uId] = pgSub;
-				++uId;
-			}
-			++uId; // Make hole
+        public static PwObjectPoolEx FromGroup(PwGroup pg)
+        {
+            var p = new PwObjectPoolEx();
 
-			foreach(PwGroup pgSub in pg.Groups)
-			{
-				AddGroupRec(pgSub, ref uId);
-			}
+            if (pg == null)
+            {
+                Debug.Assert(false);
+                return p;
+            }
 
-			uFreeId = uId;
-		}
+            ulong uFreeId = 2; // 0 = "not found", 1 is a hole
 
-		public ulong GetIdByUuid(PwUuid pwUuid)
-		{
-			if(pwUuid == null) { Debug.Assert(false); return 0; }
+            p.m_dUuidToId[pg.Uuid] = uFreeId;
+            p.m_dIdToItem[uFreeId] = pg;
+            uFreeId += 2; // Make hole
 
-			ulong uId;
-			m_dUuidToId.TryGetValue(pwUuid, out uId);
-			return uId;
-		}
+            p.AddGroupRec(pg, ref uFreeId);
+            return p;
+        }
 
-		public IStructureItem GetItemByUuid(PwUuid pwUuid)
-		{
-			if(pwUuid == null) { Debug.Assert(false); return null; }
+        public ulong GetIdByUuid(PwUuid pwUuid)
+        {
+            if (pwUuid == null)
+            {
+                Debug.Assert(false);
+                return 0;
+            }
 
-			ulong uId;
-			if(!m_dUuidToId.TryGetValue(pwUuid, out uId)) return null;
-			Debug.Assert(uId != 0);
+            m_dUuidToId.TryGetValue(pwUuid, out var uId);
+            return uId;
+        }
 
-			return GetItemById(uId);
-		}
+        public IStructureItem GetItemById(ulong uId)
+        {
+            m_dIdToItem.TryGetValue(uId, out var p);
+            return p;
+        }
 
-		public IStructureItem GetItemById(ulong uId)
-		{
-			IStructureItem p;
-			m_dIdToItem.TryGetValue(uId, out p);
-			return p;
-		}
-	}
+        public IStructureItem GetItemByUuid(PwUuid pwUuid)
+        {
+            if (pwUuid == null)
+            {
+                Debug.Assert(false);
+                return null;
+            }
 
-	internal sealed class PwObjectBlock<T> : IEnumerable<T>
-		where T : class, ITimeLogger, IStructureItem, IDeepCloneable<T>
-	{
-		private List<T> m_l = new List<T>();
+            if (!m_dUuidToId.TryGetValue(pwUuid, out var uId))
+                return null;
 
-		public T PrimaryItem
-		{
-			get { return ((m_l.Count > 0) ? m_l[0] : null); }
-		}
+            Debug.Assert(uId != 0);
 
-		private DateTime m_dtLocationChanged = TimeUtil.SafeMinValueUtc;
-		public DateTime LocationChanged
-		{
-			get { return m_dtLocationChanged; }
-		}
+            return GetItemById(uId);
+        }
 
-		private PwObjectPoolEx m_poolAssoc = null;
-		public PwObjectPoolEx PoolAssoc
-		{
-			get { return m_poolAssoc; }
-		}
+        private void AddGroupRec(PwGroup pg, ref ulong uFreeId)
+        {
+            if (pg == null)
+            {
+                Debug.Assert(false);
+                return;
+            }
 
-		public PwObjectBlock()
-		{
-		}
+            var uId = uFreeId;
 
-#if DEBUG
-		public override string ToString()
-		{
-			return ("PwObjectBlock, Count = " + m_l.Count.ToString());
-		}
-#endif
+            // Consecutive entries must have consecutive IDs
+            foreach (var pe in pg.Entries)
+            {
+                Debug.Assert(!m_dUuidToId.ContainsKey(pe.Uuid));
+                Debug.Assert(!m_dIdToItem.ContainsValue(pe));
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return m_l.GetEnumerator();
-		}
+                m_dUuidToId[pe.Uuid] = uId;
+                m_dIdToItem[uId] = pe;
+                ++uId;
+            }
+            ++uId; // Make hole
 
-		public IEnumerator<T> GetEnumerator()
-		{
-			return m_l.GetEnumerator();
-		}
+            // Consecutive groups must have consecutive IDs
+            foreach (var pgSub in pg.Groups)
+            {
+                Debug.Assert(!m_dUuidToId.ContainsKey(pgSub.Uuid));
+                Debug.Assert(!m_dIdToItem.ContainsValue(pgSub));
 
-		public void Add(T t, DateTime dtLoc, PwObjectPoolEx pool)
-		{
-			if(t == null) { Debug.Assert(false); return; }
+                m_dUuidToId[pgSub.Uuid] = uId;
+                m_dIdToItem[uId] = pgSub;
+                ++uId;
+            }
+            ++uId; // Make hole
 
-			m_l.Add(t);
+            foreach (var pgSub in pg.Groups)
+                AddGroupRec(pgSub, ref uId);
 
-			if(dtLoc > m_dtLocationChanged)
-			{
-				m_dtLocationChanged = dtLoc;
-				m_poolAssoc = pool;
-			}
-		}
-	}
+            uFreeId = uId;
+        }
+    }
 }
