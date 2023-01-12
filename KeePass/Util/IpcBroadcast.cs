@@ -44,8 +44,6 @@ namespace KeePass.Util
 		public static void Send(Program.AppMessage msg, int lParam,
 			bool bWaitWithTimeout)
 		{
-			if(!NativeLib.IsUnix()) // Windows
-			{
 				if(bWaitWithTimeout)
 				{
 					IntPtr pResult = IntPtr.Zero;
@@ -56,26 +54,6 @@ namespace KeePass.Util
 				else
 					NativeMethods.PostMessage((IntPtr)NativeMethods.HWND_BROADCAST,
 						Program.ApplicationMessage, (IntPtr)msg, (IntPtr)lParam);
-			}
-			else // Unix
-			{
-				// if(m_chClient == null)
-				// {
-				//	m_chClient = new IpcClientChannel();
-				//	ChannelServices.RegisterChannel(m_chClient, false);
-				// }
-				// try
-				// {
-				//	IpcBroadcastSingleton ipc = (Activator.GetObject(typeof(
-				//		IpcBroadcastSingleton), "ipc://" + GetPortName() + "/" +
-				//		IpcObjectName) as IpcBroadcastSingleton);
-				//	if(ipc != null) ipc.Call((int)msg, lParam);
-				// }
-				// catch(Exception) { } // Server might not exist
-
-				// FswSend(msg, lParam);
-				TcpSend(msg, lParam);
-			}
 		}
 
 		// private static string GetPortName()
@@ -109,40 +87,12 @@ namespace KeePass.Util
 		public static void StartServer()
 		{
 			StopServer();
-
-			if(!NativeLib.IsUnix()) return; // Windows
-
-			// IDictionary dOpt = new Hashtable();
-			// dOpt["portName"] = GetPortName();
-			// dOpt["exclusiveAddressUse"] = false;
-			// dOpt["secure"] = false;
-			// m_chServer = new IpcServerChannel(dOpt, null);
-			// ChannelServices.RegisterChannel(m_chServer, false);
-			// RemotingConfiguration.RegisterWellKnownServiceType(typeof(
-			//	IpcBroadcastSingleton), IpcObjectName,
-			//	WellKnownObjectMode.SingleCall);
-
-			// FswStartServer();
-			TcpStartServer();
 		}
 
 		public static void StopServer()
 		{
-			if(!NativeLib.IsUnix()) return; // Windows
+			 return; // Windows
 
-			// if(m_chClient != null)
-			// {
-			//	ChannelServices.UnregisterChannel(m_chClient);
-			//	m_chClient = null;
-			// }
-			// if(m_chServer != null)
-			// {
-			//	ChannelServices.UnregisterChannel(m_chServer);
-			//	m_chServer = null;
-			// }
-
-			// FswStopServer();
-			TcpStopServer();
 		}
 	}
 

@@ -17,239 +17,240 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
 using KeePassLib.Native;
-using KeePassLib.Utility;
+using System;
+using System.Diagnostics;
 
 namespace KeePassLib.Cryptography.KeyDerivation
 {
-	public enum Argon2Type
-	{
-		// The values must be the same as in the Argon2 specification
-		D = 0,
-		ID = 2
-	}
+    public enum Argon2Type
+    {
+        // The values must be the same as in the Argon2 specification
+        D = 0,
 
-	public sealed partial class Argon2Kdf : KdfEngine
-	{
-		private static readonly PwUuid g_uuidD = new PwUuid(new byte[] {
-			0xEF, 0x63, 0x6D, 0xDF, 0x8C, 0x29, 0x44, 0x4B,
-			0x91, 0xF7, 0xA9, 0xA4, 0x03, 0xE3, 0x0A, 0x0C });
-		private static readonly PwUuid g_uuidID = new PwUuid(new byte[] {
-			0x9E, 0x29, 0x8B, 0x19, 0x56, 0xDB, 0x47, 0x73,
-			0xB2, 0x3D, 0xFC, 0x3E, 0xC6, 0xF0, 0xA1, 0xE6 });
+        ID = 2
+    }
 
-		public static readonly string ParamSalt = "S"; // Byte[]
-		public static readonly string ParamParallelism = "P"; // UInt32
-		public static readonly string ParamMemory = "M"; // UInt64
-		public static readonly string ParamIterations = "I"; // UInt64
-		public static readonly string ParamVersion = "V"; // UInt32
-		public static readonly string ParamSecretKey = "K"; // Byte[]
-		public static readonly string ParamAssocData = "A"; // Byte[]
+    public sealed partial class Argon2Kdf : KdfEngine
+    {
+        public static readonly string ParamAssocData = "A";
 
-		private const uint MinVersion = 0x10;
-		private const uint MaxVersion = 0x13;
+        public static readonly string ParamIterations = "I";
 
-		private const int MinSalt = 8;
-		private const int MaxSalt = int.MaxValue; // .NET limit; 2^32 - 1 in spec.
+        public static readonly string ParamMemory = "M";
 
-		internal const ulong MinIterations = 1;
-		internal const ulong MaxIterations = uint.MaxValue;
+        public static readonly string ParamParallelism = "P";
 
-		internal const ulong MinMemory = 1024 * 8; // For parallelism = 1
-		// internal const ulong MaxMemory = (ulong)uint.MaxValue * 1024UL; // Spec.
-		internal const ulong MaxMemory = int.MaxValue; // .NET limit
+        public static readonly string ParamSalt = "S";
 
-		internal const uint MinParallelism = 1;
-		internal const uint MaxParallelism = (1 << 24) - 1;
+        public static readonly string ParamSecretKey = "K";
 
-		internal const ulong DefaultIterations = 2;
-		internal const ulong DefaultMemory = 64 * 1024 * 1024; // 64 MB
-		internal const uint DefaultParallelism = 2;
+        // Byte[]
+        // UInt32
+        // UInt64
+        // UInt64
+        public static readonly string ParamVersion = "V";
 
-		private readonly Argon2Type m_t;
+        internal const ulong DefaultIterations = 2;
 
-		public override PwUuid Uuid
-		{
-			get { return ((m_t == Argon2Type.D) ? g_uuidD : g_uuidID); }
-		}
+        internal const ulong DefaultMemory = 64 * 1024 * 1024;
 
-		public override string Name
-		{
-			get { return ((m_t == Argon2Type.D) ? "Argon2d" : "Argon2id"); }
-		}
+        // 64 MB
+        internal const uint DefaultParallelism = 2;
 
-		public Argon2Kdf() : this(Argon2Type.D)
-		{
-		}
+        internal const ulong MaxIterations = uint.MaxValue;
 
-		public Argon2Kdf(Argon2Type t)
-		{
-			if((t != Argon2Type.D) && (t != Argon2Type.ID))
-				throw new NotSupportedException();
+        // internal const ulong MaxMemory = (ulong)uint.MaxValue * 1024UL; // Spec.
+        internal const ulong MaxMemory = int.MaxValue;
 
-			m_t = t;
-		}
+        internal const uint MaxParallelism = (1 << 24) - 1;
 
-		public override KdfParameters GetDefaultParameters()
-		{
-			KdfParameters p = base.GetDefaultParameters();
+        internal const ulong MinIterations = 1;
 
-			p.SetUInt32(ParamVersion, MaxVersion);
+        internal const ulong MinMemory = 1024 * 8;
 
-			p.SetUInt64(ParamIterations, DefaultIterations);
-			p.SetUInt64(ParamMemory, DefaultMemory);
-			p.SetUInt32(ParamParallelism, DefaultParallelism);
+        internal const uint MinParallelism = 1;
 
-			return p;
-		}
+        private const int MaxSalt = int.MaxValue;
 
-		public override void Randomize(KdfParameters p)
-		{
-			if(p == null) { Debug.Assert(false); return; }
-			Debug.Assert(p.KdfUuid.Equals(this.Uuid));
+        private const uint MaxVersion = 0x13;
 
-			byte[] pb = CryptoRandom.Instance.GetRandomBytes(32);
-			p.SetByteArray(ParamSalt, pb);
-		}
+        private const int MinSalt = 8;
 
-		public override byte[] Transform(byte[] pbMsg, KdfParameters p)
-		{
-			if(pbMsg == null) throw new ArgumentNullException("pbMsg");
-			if(p == null) throw new ArgumentNullException("p");
+        private const uint MinVersion = 0x10;
 
-			byte[] pbSalt = p.GetByteArray(ParamSalt);
-			if(pbSalt == null)
-				throw new ArgumentNullException("p.Salt");
-			if((pbSalt.Length < MinSalt) || (pbSalt.Length > MaxSalt))
-				throw new ArgumentOutOfRangeException("p.Salt");
+        private static readonly PwUuid g_uuidD = new PwUuid(new byte[] {
+            0xEF, 0x63, 0x6D, 0xDF, 0x8C, 0x29, 0x44, 0x4B,
+            0x91, 0xF7, 0xA9, 0xA4, 0x03, 0xE3, 0x0A, 0x0C });
 
-			uint uPar = p.GetUInt32(ParamParallelism, 0);
-			if((uPar < MinParallelism) || (uPar > MaxParallelism))
-				throw new ArgumentOutOfRangeException("p.Parallelism");
+        private static readonly PwUuid g_uuidID = new PwUuid(new byte[] {
+            0x9E, 0x29, 0x8B, 0x19, 0x56, 0xDB, 0x47, 0x73,
+            0xB2, 0x3D, 0xFC, 0x3E, 0xC6, 0xF0, 0xA1, 0xE6 });
 
-			ulong uMem = p.GetUInt64(ParamMemory, 0);
-			if((uMem < MinMemory) || (uMem > MaxMemory))
-				throw new ArgumentOutOfRangeException("p.Memory");
+        // UInt32
+        // Byte[]
+        // Byte[]
+        // .NET limit; 2^32 - 1 in spec.
+        // For parallelism = 1
+        // .NET limit
+        private readonly Argon2Type m_t;
 
-			ulong uIt = p.GetUInt64(ParamIterations, 0);
-			if((uIt < MinIterations) || (uIt > MaxIterations))
-				throw new ArgumentOutOfRangeException("p.Iterations");
+        public Argon2Kdf() : this(Argon2Type.D)
+        {
+        }
 
-			uint v = p.GetUInt32(ParamVersion, 0);
-			if((v < MinVersion) || (v > MaxVersion))
-				throw new ArgumentOutOfRangeException("p.Version");
+        public Argon2Kdf(Argon2Type t)
+        {
+            if ((t != Argon2Type.D) && (t != Argon2Type.ID))
+                throw new NotSupportedException();
 
-			byte[] pbSecretKey = p.GetByteArray(ParamSecretKey);
-			byte[] pbAssocData = p.GetByteArray(ParamAssocData);
+            m_t = t;
+        }
 
-			const int cbOut = 32;
+        public override string Name
+        {
+            get { return ((m_t == Argon2Type.D) ? "Argon2d" : "Argon2id"); }
+        }
 
-			byte[] pbRet = Argon2Native(pbMsg, pbSalt, uPar, uMem,
-				uIt, cbOut, v, pbSecretKey, pbAssocData);
+        public override PwUuid Uuid
+        {
+            get { return ((m_t == Argon2Type.D) ? g_uuidD : g_uuidID); }
+        }
 
-			if(pbRet == null)
-			{
-				pbRet = Argon2Transform(pbMsg, pbSalt, uPar, uMem,
-					uIt, cbOut, v, pbSecretKey, pbAssocData);
+        public override KdfParameters GetBestParameters(uint uMilliseconds)
+        {
+            KdfParameters p = GetDefaultParameters();
+            Randomize(p);
 
-				if(uMem > (100UL * 1024UL * 1024UL)) GC.Collect();
-			}
+            MaximizeParamUInt64(p, ParamIterations, MinIterations,
+                MaxIterations, uMilliseconds, true);
+            return p;
+        }
 
-			return pbRet;
-		}
+        public override KdfParameters GetDefaultParameters()
+        {
+            KdfParameters p = base.GetDefaultParameters();
 
-		public override KdfParameters GetBestParameters(uint uMilliseconds)
-		{
-			KdfParameters p = GetDefaultParameters();
-			Randomize(p);
+            p.SetUInt32(ParamVersion, MaxVersion);
 
-			MaximizeParamUInt64(p, ParamIterations, MinIterations,
-				MaxIterations, uMilliseconds, true);
-			return p;
-		}
+            p.SetUInt64(ParamIterations, DefaultIterations);
+            p.SetUInt64(ParamMemory, DefaultMemory);
+            p.SetUInt32(ParamParallelism, DefaultParallelism);
 
-		private byte[] Argon2Native(byte[] pbMsg, byte[] pbSalt, uint uParallel,
-			ulong uMem, ulong uIt, int cbOut, uint uVersion, byte[] pbSecretKey,
-			byte[] pbAssocData)
-		{
-			NativeBufferEx nbMsg = null, nbSalt = null, nbHash = null;
-			try
-			{
-				// Secret key and assoc. data are unsupported by 'argon2_hash'
-				if((pbSecretKey != null) && (pbSecretKey.Length != 0)) return null;
-				if((pbAssocData != null) && (pbAssocData.Length != 0)) return null;
+            return p;
+        }
 
-				int iType;
-				if(m_t == Argon2Type.D) iType = 0;
-				else if(m_t == Argon2Type.ID) iType = 2;
-				else { Debug.Assert(false); return null; }
+        public override void Randomize(KdfParameters p)
+        {
+            if (p == null) { Debug.Assert(false); return; }
+            Debug.Assert(p.KdfUuid.Equals(this.Uuid));
 
-				nbMsg = new NativeBufferEx(pbMsg, true, true, 1);
-				IntPtr cbMsg = new IntPtr(pbMsg.Length);
-				nbSalt = new NativeBufferEx(pbSalt, true, true, 1);
-				IntPtr cbSalt = new IntPtr(pbSalt.Length);
-				uint m = checked((uint)(uMem / NbBlockSize));
-				uint t = checked((uint)uIt);
-				nbHash = new NativeBufferEx(cbOut, true, true, true, 1);
-				IntPtr cbHash = new IntPtr(cbOut);
+            byte[] pb = CryptoRandom.Instance.GetRandomBytes(32);
+            p.SetByteArray(ParamSalt, pb);
+        }
 
-				bool b = false;
-				if(NativeLib.IsUnix())
-				{
-					if(!MonoWorkarounds.IsRequired(100004)) return null;
+        public override byte[] Transform(byte[] pbMsg, KdfParameters p)
+        {
+            if (pbMsg == null) throw new ArgumentNullException("pbMsg");
+            if (p == null) throw new ArgumentNullException("p");
 
-					try
-					{
-						b = (NativeMethods.argon2_hash_u0(t, m, uParallel,
-							nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
-							nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
-							iType, uVersion) == 0);
-					}
-					catch(DllNotFoundException) { }
-					catch(Exception) { Debug.Assert(false); }
+            byte[] pbSalt = p.GetByteArray(ParamSalt);
+            if (pbSalt == null)
+                throw new ArgumentNullException("p.Salt");
+            if ((pbSalt.Length < MinSalt) || (pbSalt.Length > MaxSalt))
+                throw new ArgumentOutOfRangeException("p.Salt");
 
-					if(!b)
-						b = (NativeMethods.argon2_hash_u1(t, m, uParallel,
-							nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
-							nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
-							iType, uVersion) == 0);
-				}
-				else // Windows
-				{
-					if(IntPtr.Size == 4)
-						b = (NativeMethods.argon2_hash_w32(t, m, uParallel,
-							nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
-							nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
-							iType, uVersion) == 0);
-					else
-						b = (NativeMethods.argon2_hash_w64(t, m, uParallel,
-							nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
-							nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
-							iType, uVersion) == 0);
-				}
+            uint uPar = p.GetUInt32(ParamParallelism, 0);
+            if ((uPar < MinParallelism) || (uPar > MaxParallelism))
+                throw new ArgumentOutOfRangeException("p.Parallelism");
 
-				if(b)
-				{
-					byte[] pbHash = new byte[cbOut];
-					nbHash.CopyTo(pbHash);
-					return pbHash;
-				}
-			}
-			catch(DllNotFoundException) { }
-			catch(Exception) { Debug.Assert(false); }
-			finally
-			{
-				if(nbMsg != null) nbMsg.Dispose();
-				if(nbSalt != null) nbSalt.Dispose();
-				if(nbHash != null) nbHash.Dispose();
-			}
+            ulong uMem = p.GetUInt64(ParamMemory, 0);
+            if ((uMem < MinMemory) || (uMem > MaxMemory))
+                throw new ArgumentOutOfRangeException("p.Memory");
 
-			return null;
-		}
-	}
+            ulong uIt = p.GetUInt64(ParamIterations, 0);
+            if ((uIt < MinIterations) || (uIt > MaxIterations))
+                throw new ArgumentOutOfRangeException("p.Iterations");
+
+            uint v = p.GetUInt32(ParamVersion, 0);
+            if ((v < MinVersion) || (v > MaxVersion))
+                throw new ArgumentOutOfRangeException("p.Version");
+
+            byte[] pbSecretKey = p.GetByteArray(ParamSecretKey);
+            byte[] pbAssocData = p.GetByteArray(ParamAssocData);
+
+            const int cbOut = 32;
+
+            byte[] pbRet = Argon2Native(pbMsg, pbSalt, uPar, uMem,
+                uIt, cbOut, v, pbSecretKey, pbAssocData);
+
+            if (pbRet == null)
+            {
+                pbRet = Argon2Transform(pbMsg, pbSalt, uPar, uMem,
+                    uIt, cbOut, v, pbSecretKey, pbAssocData);
+
+                if (uMem > (100UL * 1024UL * 1024UL)) GC.Collect();
+            }
+
+            return pbRet;
+        }
+
+        private byte[] Argon2Native(byte[] pbMsg, byte[] pbSalt, uint uParallel,
+            ulong uMem, ulong uIt, int cbOut, uint uVersion, byte[] pbSecretKey,
+            byte[] pbAssocData)
+        {
+            NativeBufferEx nbMsg = null, nbSalt = null, nbHash = null;
+            try
+            {
+                // Secret key and assoc. data are unsupported by 'argon2_hash'
+                if ((pbSecretKey != null) && (pbSecretKey.Length != 0)) return null;
+                if ((pbAssocData != null) && (pbAssocData.Length != 0)) return null;
+
+                int iType;
+                if (m_t == Argon2Type.D) iType = 0;
+                else if (m_t == Argon2Type.ID) iType = 2;
+                else { Debug.Assert(false); return null; }
+
+                nbMsg = new NativeBufferEx(pbMsg, true, true, 1);
+                IntPtr cbMsg = new IntPtr(pbMsg.Length);
+                nbSalt = new NativeBufferEx(pbSalt, true, true, 1);
+                IntPtr cbSalt = new IntPtr(pbSalt.Length);
+                uint m = checked((uint)(uMem / NbBlockSize));
+                uint t = checked((uint)uIt);
+                nbHash = new NativeBufferEx(cbOut, true, true, true, 1);
+                IntPtr cbHash = new IntPtr(cbOut);
+
+                bool b = false;
+                // Windows
+
+                if (IntPtr.Size == 4)
+                    b = (NativeMethods.argon2_hash_w32(t, m, uParallel,
+                        nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
+                        nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
+                        iType, uVersion) == 0);
+                else
+                    b = (NativeMethods.argon2_hash_w64(t, m, uParallel,
+                        nbMsg.Data, cbMsg, nbSalt.Data, cbSalt,
+                        nbHash.Data, cbHash, IntPtr.Zero, IntPtr.Zero,
+                        iType, uVersion) == 0);
+
+                if (b)
+                {
+                    byte[] pbHash = new byte[cbOut];
+                    nbHash.CopyTo(pbHash);
+                    return pbHash;
+                }
+            }
+            catch (DllNotFoundException) { }
+            catch (Exception) { Debug.Assert(false); }
+            finally
+            {
+                if (nbMsg != null) nbMsg.Dispose();
+                if (nbSalt != null) nbSalt.Dispose();
+                if (nbHash != null) nbHash.Dispose();
+            }
+
+            return null;
+        }
+    }
 }

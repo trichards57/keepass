@@ -1023,18 +1023,11 @@ namespace KeePassLib.Cryptography
 		private static void TestNativeLib()
 		{
 #if DEBUG
-			if(NativeLib.IsUnix())
-			{
-				if(NativeLib.EncodeDataToArgs("A\"B C\\D") !=
-					"A\\\"B C\\\\D")
-					throw new Exception("NativeLib-Args-U");
-			}
-			else // Windows
-			{
+			
 				if(NativeLib.EncodeDataToArgs("A\"B C\\D \\\\ \\\" \\\\\" \\\\\\\" \\\\\\") !=
 					"A\\\"B C\\D \\\\ \\\\\\\" \\\\\\\\\\\" \\\\\\\\\\\\\\\" \\\\\\")
 					throw new Exception("NativeLib-Args-W");
-			}
+			
 
 			string strOrg = "A\\B\\\\C\\\\\\D E\"F\"\"G\"\"\"H I\'J\'\'K\'\'\'L " +
 				"M\\\"N\\\\\"O\\\\\\\"P\\\\\\\\\\\"Q R\\\'S T\\\\\'U \\\\\\";
@@ -1328,19 +1321,9 @@ namespace KeePassLib.Cryptography
 			if(UrlUtil.GetHost(@"s://u:p@d.tld:p/p?q#f") != "d.tld")
 				throw new InvalidOperationException("UrlUtil-H7");
 
-			if(!NativeLib.IsUnix()) // Windows
-			{
 				if(UrlUtil.FileUrlToPath("file:///C:/Windows/Win.ini") !=
 					"C:\\Windows\\Win.ini")
 					throw new Exception("UrlUtil-FUTP-W");
-			}
-			else // Unix
-			{
-				if(UrlUtil.FileUrlToPath("file:///etc/fstab") != "/etc/fstab")
-					throw new Exception("UrlUtil-FUTP-U");
-			}
-
-			if(NativeLib.IsUnix()) return;
 
 			string strBase = "\\\\HOMESERVER\\Apps\\KeePass\\KeePass.exe";
 			string strDoc = "\\\\HOMESERVER\\Documents\\KeePass\\NewDatabase.kdbx";

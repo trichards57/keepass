@@ -35,13 +35,7 @@ namespace KeePassLib.Cryptography.KeyDerivation
 
 		private static bool GCryptInit()
 		{
-			if(!NativeLib.IsUnix()) return false; // Independent of workaround state
-			if(!MonoWorkarounds.IsRequired(1468)) return false; // Can be turned off
-
-			// gcry_check_version initializes the library;
-			// throws when LibGCrypt is not available
-			NativeMethods.gcry_check_version(IntPtr.Zero);
-			return true;
+			return false; // Independent of workaround state
 		}
 
 		private static bool GCryptEncrypt(IntPtr h, IntPtr pbZero, IntPtr pbBuf,

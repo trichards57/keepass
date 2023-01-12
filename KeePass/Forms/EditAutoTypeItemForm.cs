@@ -157,8 +157,7 @@ namespace KeePass.Forms
 
 			try
 			{
-				if(NativeLib.IsUnix()) PopulateWindowsListUnix();
-				else PopulateWindowsListWin();
+				PopulateWindowsListWin();
 			}
 			catch(Exception) { Debug.Assert(false); }
 

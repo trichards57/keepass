@@ -17,208 +17,186 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePassLib.Cryptography;
+using KeePassLib.Native;
+using KeePassLib.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
-
-using KeePassLib.Cryptography;
-using KeePassLib.Native;
-using KeePassLib.Utility;
 
 namespace KeePass.Util
 {
-	/// <summary>
-	/// Low performance, system-wide mutex objects pool.
-	/// </summary>
-	public static class GlobalMutexPool
-	{
-		private static List<KeyValuePair<string, Mutex>> m_vMutexesWin =
-			new List<KeyValuePair<string, Mutex>>();
-		private static List<KeyValuePair<string, string>> m_vMutexesUnix =
-			new List<KeyValuePair<string, string>>();
+    /// <summary>
+    /// Low performance, system-wide mutex objects pool.
+    /// </summary>
+    public static class GlobalMutexPool
+    {
+        private const int GmpMutexRefreshMs = 60 * 1000;
 
-		private static int m_iLastRefresh = 0;
+        private const double GmpMutexValidSecs = 190.0;
 
-		private const double GmpMutexValidSecs = 190.0;
-		private const int GmpMutexRefreshMs = 60 * 1000;
+        private static readonly byte[] GmpOptEnt = { 0x08, 0xA6, 0x5E, 0x40 };
 
-		private static readonly byte[] GmpOptEnt = { 0x08, 0xA6, 0x5E, 0x40 };
+        private static int m_iLastRefresh = 0;
 
-		public static bool CreateMutex(string strName, bool bInitiallyOwned)
-		{
-			if(!NativeLib.IsUnix()) // Windows
-				return CreateMutexWin(strName, bInitiallyOwned);
+        private static List<KeyValuePair<string, string>> m_vMutexesUnix =
+            new List<KeyValuePair<string, string>>();
 
-			return CreateMutexUnix(strName, bInitiallyOwned);
-		}
+        private static List<KeyValuePair<string, Mutex>> m_vMutexesWin =
+                                                    new List<KeyValuePair<string, Mutex>>();
 
-		private static bool CreateMutexWin(string strName, bool bInitiallyOwned)
-		{
-			try
-			{
-				bool bCreatedNew;
-				Mutex m = new Mutex(bInitiallyOwned, strName, out bCreatedNew);
+        public static bool CreateMutex(string strName, bool bInitiallyOwned)
+        {
+            
+                return CreateMutexWin(strName, bInitiallyOwned);
 
-				if(bCreatedNew)
-				{
-					m_vMutexesWin.Add(new KeyValuePair<string, Mutex>(strName, m));
-					return true;
-				}
-			}
-			catch(Exception) { }
+        }
 
-			return false;
-		}
+        public static void Refresh()
+        {
+            return; // Windows, no refresh required
+        }
 
-		private static bool CreateMutexUnix(string strName, bool bInitiallyOwned)
-		{
-			string strPath = GetMutexPath(strName);
-			try
-			{
-				if(File.Exists(strPath))
-				{
-					byte[] pbEnc = File.ReadAllBytes(strPath);
-					byte[] pb = CryptoUtil.UnprotectData(pbEnc, GmpOptEnt,
-						DataProtectionScope.CurrentUser);
-					if(pb.Length == 12)
-					{
-						long lTime = MemUtil.BytesToInt64(pb, 0);
-						DateTime dt = DateTime.FromBinary(lTime);
+        public static void ReleaseAll()
+        {
+            
+                for (int i = m_vMutexesWin.Count - 1; i >= 0; --i)
+                    ReleaseMutexWin(m_vMutexesWin[i].Key);
+            
+        }
 
-						if((DateTime.UtcNow - dt).TotalSeconds < GmpMutexValidSecs)
-						{
-							int pid = MemUtil.BytesToInt32(pb, 8);
-							try
-							{
-								Process.GetProcessById(pid); // Throws if process is not running
-								return false; // Actively owned by other process
-							}
-							catch(Exception) { }
-						}
+        public static bool ReleaseMutex(string strName)
+        {
+                return ReleaseMutexWin(strName);
 
-						// Release the old mutex since process is not running
-						ReleaseMutexUnix(strName);
-					}
-					else { Debug.Assert(false); }
-				}
-			}
-			catch(Exception) { Debug.Assert(false); }
+        }
 
-			try { WriteMutexFilePriv(strPath); }
-			catch(Exception) { Debug.Assert(false); }
+        private static bool CreateMutexUnix(string strName, bool bInitiallyOwned)
+        {
+            string strPath = GetMutexPath(strName);
+            try
+            {
+                if (File.Exists(strPath))
+                {
+                    byte[] pbEnc = File.ReadAllBytes(strPath);
+                    byte[] pb = CryptoUtil.UnprotectData(pbEnc, GmpOptEnt,
+                        DataProtectionScope.CurrentUser);
+                    if (pb.Length == 12)
+                    {
+                        long lTime = MemUtil.BytesToInt64(pb, 0);
+                        DateTime dt = DateTime.FromBinary(lTime);
 
-			m_vMutexesUnix.Add(new KeyValuePair<string, string>(strName, strPath));
-			return true;
-		}
+                        if ((DateTime.UtcNow - dt).TotalSeconds < GmpMutexValidSecs)
+                        {
+                            int pid = MemUtil.BytesToInt32(pb, 8);
+                            try
+                            {
+                                Process.GetProcessById(pid); // Throws if process is not running
+                                return false; // Actively owned by other process
+                            }
+                            catch (Exception) { }
+                        }
 
-		private static void WriteMutexFilePriv(string strPath)
-		{
-			byte[] pb = new byte[12];
-			MemUtil.Int64ToBytes(DateTime.UtcNow.ToBinary()).CopyTo(pb, 0);
-			MemUtil.Int32ToBytes(Process.GetCurrentProcess().Id).CopyTo(pb, 8);
-			byte[] pbEnc = CryptoUtil.ProtectData(pb, GmpOptEnt,
-				DataProtectionScope.CurrentUser);
-			File.WriteAllBytes(strPath, pbEnc);
-		}
+                        // Release the old mutex since process is not running
+                        ReleaseMutexUnix(strName);
+                    }
+                    else { Debug.Assert(false); }
+                }
+            }
+            catch (Exception) { Debug.Assert(false); }
 
-		public static bool ReleaseMutex(string strName)
-		{
-			if(!NativeLib.IsUnix()) // Windows
-				return ReleaseMutexWin(strName);
+            try { WriteMutexFilePriv(strPath); }
+            catch (Exception) { Debug.Assert(false); }
 
-			return ReleaseMutexUnix(strName);
-		}
+            m_vMutexesUnix.Add(new KeyValuePair<string, string>(strName, strPath));
+            return true;
+        }
 
-		private static bool ReleaseMutexWin(string strName)
-		{
-			for(int i = 0; i < m_vMutexesWin.Count; ++i)
-			{
-				if(m_vMutexesWin[i].Key.Equals(strName, StrUtil.CaseIgnoreCmp))
-				{
-					try { m_vMutexesWin[i].Value.ReleaseMutex(); }
-					catch(Exception) { Debug.Assert(false); }
+        private static bool CreateMutexWin(string strName, bool bInitiallyOwned)
+        {
+            try
+            {
+                bool bCreatedNew;
+                Mutex m = new Mutex(bInitiallyOwned, strName, out bCreatedNew);
 
-					try { m_vMutexesWin[i].Value.Close(); }
-					catch(Exception) { Debug.Assert(false); }
+                if (bCreatedNew)
+                {
+                    m_vMutexesWin.Add(new KeyValuePair<string, Mutex>(strName, m));
+                    return true;
+                }
+            }
+            catch (Exception) { }
 
-					m_vMutexesWin.RemoveAt(i);
-					return true;
-				}
-			}
+            return false;
+        }
 
-			return false;
-		}
+        private static string GetMutexPath(string strName)
+        {
+            string strDir = UrlUtil.EnsureTerminatingSeparator(
+                UrlUtil.GetTempPath(), false);
+            return (strDir + IpcUtilEx.IpcMsgFilePreID + IpcBroadcast.GetUserID() +
+                "-Mutex-" + strName + ".tmp");
+        }
 
-		private static bool ReleaseMutexUnix(string strName)
-		{
-			for(int i = 0; i < m_vMutexesUnix.Count; ++i)
-			{
-				if(m_vMutexesUnix[i].Key.Equals(strName, StrUtil.CaseIgnoreCmp))
-				{
-					for(int r = 0; r < 12; ++r)
-					{
-						try
-						{
-							if(!File.Exists(m_vMutexesUnix[i].Value)) break;
+        private static bool ReleaseMutexUnix(string strName)
+        {
+            for (int i = 0; i < m_vMutexesUnix.Count; ++i)
+            {
+                if (m_vMutexesUnix[i].Key.Equals(strName, StrUtil.CaseIgnoreCmp))
+                {
+                    for (int r = 0; r < 12; ++r)
+                    {
+                        try
+                        {
+                            if (!File.Exists(m_vMutexesUnix[i].Value)) break;
 
-							File.Delete(m_vMutexesUnix[i].Value);
-							break;
-						}
-						catch(Exception) { }
+                            File.Delete(m_vMutexesUnix[i].Value);
+                            break;
+                        }
+                        catch (Exception) { }
 
-						Thread.Sleep(10);
-					}
+                        Thread.Sleep(10);
+                    }
 
-					m_vMutexesUnix.RemoveAt(i);
-					return true;
-				}
-			}
+                    m_vMutexesUnix.RemoveAt(i);
+                    return true;
+                }
+            }
 
-			return false;
-		}
+            return false;
+        }
 
-		public static void ReleaseAll()
-		{
-			if(!NativeLib.IsUnix()) // Windows
-			{
-				for(int i = m_vMutexesWin.Count - 1; i >= 0; --i)
-					ReleaseMutexWin(m_vMutexesWin[i].Key);
-			}
-			else
-			{
-				for(int i = m_vMutexesUnix.Count - 1; i >= 0; --i)
-					ReleaseMutexUnix(m_vMutexesUnix[i].Key);
-			}
-		}
+        private static bool ReleaseMutexWin(string strName)
+        {
+            for (int i = 0; i < m_vMutexesWin.Count; ++i)
+            {
+                if (m_vMutexesWin[i].Key.Equals(strName, StrUtil.CaseIgnoreCmp))
+                {
+                    try { m_vMutexesWin[i].Value.ReleaseMutex(); }
+                    catch (Exception) { Debug.Assert(false); }
 
-		public static void Refresh()
-		{
-			if(!NativeLib.IsUnix()) return; // Windows, no refresh required
+                    try { m_vMutexesWin[i].Value.Close(); }
+                    catch (Exception) { Debug.Assert(false); }
 
-			// Unix
-			int iTicksDiff = (Environment.TickCount - m_iLastRefresh);
-			if(iTicksDiff >= GmpMutexRefreshMs)
-			{
-				m_iLastRefresh = Environment.TickCount;
+                    m_vMutexesWin.RemoveAt(i);
+                    return true;
+                }
+            }
 
-				for(int i = 0; i < m_vMutexesUnix.Count; ++i)
-				{
-					try { WriteMutexFilePriv(m_vMutexesUnix[i].Value); }
-					catch(Exception) { Debug.Assert(false); }
-				}
-			}
-		}
+            return false;
+        }
 
-		private static string GetMutexPath(string strName)
-		{
-			string strDir = UrlUtil.EnsureTerminatingSeparator(
-				UrlUtil.GetTempPath(), false);
-			return (strDir + IpcUtilEx.IpcMsgFilePreID + IpcBroadcast.GetUserID() +
-				"-Mutex-" + strName + ".tmp");
-		}
-	}
+        private static void WriteMutexFilePriv(string strPath)
+        {
+            byte[] pb = new byte[12];
+            MemUtil.Int64ToBytes(DateTime.UtcNow.ToBinary()).CopyTo(pb, 0);
+            MemUtil.Int32ToBytes(Process.GetCurrentProcess().Id).CopyTo(pb, 8);
+            byte[] pbEnc = CryptoUtil.ProtectData(pb, GmpOptEnt,
+                DataProtectionScope.CurrentUser);
+            File.WriteAllBytes(strPath, pbEnc);
+        }
+    }
 }

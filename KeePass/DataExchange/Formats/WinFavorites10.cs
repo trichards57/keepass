@@ -17,6 +17,13 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePass.Native;
+using KeePass.Resources;
+using KeePass.Util;
+using KeePass.Util.Spr;
+using KeePassLib;
+using KeePassLib.Interfaces;
+using KeePassLib.Utility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,307 +32,298 @@ using System.IO;
 using System.Text;
 using System.Threading;
 
-using KeePass.Native;
-using KeePass.Resources;
-using KeePass.Util;
-using KeePass.Util.Spr;
-
-using KeePassLib;
-using KeePassLib.Interfaces;
-using KeePassLib.Utility;
-
-using NativeLib = KeePassLib.Native.NativeLib;
-
 namespace KeePass.DataExchange.Formats
 {
-	internal sealed class WinFavorites10 : FileFormatProvider
-	{
-		private readonly bool m_bInRoot;
+    internal sealed class WinFavorites10 : FileFormatProvider
+    {
+        private const string IniTypeKey = "Type";
+        private const string IniTypeValue = "WinFav-Export 1.0";
 
-		private const string IniTypeKey = "Type";
-		private const string IniTypeValue = "WinFav-Export 1.0";
+        private static readonly string LnkDescSuffix = " [" +
+            PwDefs.ShortProductName + "]";
 
-		private static readonly string LnkDescSuffix = " [" +
-			PwDefs.ShortProductName + "]";
+        private readonly bool m_bInRoot;
 
-		public override bool SupportsImport { get { return false; } }
-		public override bool SupportsExport { get { return true; } }
+        public WinFavorites10(bool bInRoot) : base()
+        {
+            m_bInRoot = bInRoot;
+        }
 
-		public override string FormatName
-		{
-			get
-			{
-				return (KPRes.WindowsFavorites + " (" + (m_bInRoot ?
-					KPRes.RootDirectory : (KPRes.Folder + " '" +
-					GetFolderName(true, null, null) + "'")) + ")");
-			}
-		}
-		public override string ApplicationGroup { get { return KPRes.General; } }
+        public override string ApplicationGroup
+        { get { return KPRes.General; } }
 
-		public override bool RequiresFile { get { return false; } }
+        public override string FormatName
+        {
+            get
+            {
+                return (KPRes.WindowsFavorites + " (" + (m_bInRoot ?
+                    KPRes.RootDirectory : (KPRes.Folder + " '" +
+                    GetFolderName(true, null, null) + "'")) + ")");
+            }
+        }
 
-		public override Image SmallIcon
-		{
-			get { return KeePass.Properties.Resources.B16x16_Services; }
-		}
+        public override bool RequiresFile
+        { get { return false; } }
 
-		public WinFavorites10(bool bInRoot) : base()
-		{
-			m_bInRoot = bInRoot;
-		}
+        public override Image SmallIcon
+        {
+            get { return KeePass.Properties.Resources.B16x16_Services; }
+        }
 
-		private static string GetFolderName(bool bForceRoot, PwExportInfo pwExportInfo,
-			PwGroup pg)
-		{
-			string strBaseName = UrlUtil.FilterFileName(string.IsNullOrEmpty(
-				Program.Config.Defaults.WinFavsBaseFolderName) ? PwDefs.ShortProductName :
-				Program.Config.Defaults.WinFavsBaseFolderName);
-			if(bForceRoot || (pwExportInfo == null) || (pg == null))
-				return strBaseName;
+        public override bool SupportsExport
+        { get { return true; } }
+        public override bool SupportsImport
+        { get { return false; } }
 
-			string strGroup = UrlUtil.FilterFileName(pg.Name);
-			string strRootName = strBaseName;
-			if(strGroup.Length > 0) strRootName += (" - " + strGroup);
+        public override bool Export(PwExportInfo pwExportInfo, Stream sOutput,
+            IStatusLogger slLogger)
+        {
+            PwGroup pg = pwExportInfo.DataGroup;
+            if (pg == null) { Debug.Assert(false); return true; }
 
-			if(pwExportInfo.ContextDatabase != null)
-			{
-				if(pg == pwExportInfo.ContextDatabase.RootGroup)
-					strRootName = strBaseName;
-			}
+            string strFavsRoot = Environment.GetFolderPath(
+                Environment.SpecialFolder.Favorites);
+            if (string.IsNullOrEmpty(strFavsRoot)) return false;
 
-			return strRootName;
-		}
+            uint uTotalGroups, uTotalEntries, uEntriesProcessed = 0;
+            pwExportInfo.DataGroup.GetCounts(true, out uTotalGroups, out uTotalEntries);
 
-		public override bool Export(PwExportInfo pwExportInfo, Stream sOutput,
-			IStatusLogger slLogger)
-		{
-			PwGroup pg = pwExportInfo.DataGroup;
-			if(pg == null) { Debug.Assert(false); return true; }
+            if (!m_bInRoot) // In folder
+            {
+                string strRootName = GetFolderName(false, pwExportInfo, pg);
 
-			string strFavsRoot = Environment.GetFolderPath(
-				Environment.SpecialFolder.Favorites);
-			if(string.IsNullOrEmpty(strFavsRoot)) return false;
+                string strFavsSub = UrlUtil.EnsureTerminatingSeparator(
+                    strFavsRoot, false) + strRootName;
+                if (Directory.Exists(strFavsSub))
+                {
+                    Directory.Delete(strFavsSub, true);
+                    WaitForDirCommit(strFavsSub, false);
+                }
 
-			uint uTotalGroups, uTotalEntries, uEntriesProcessed = 0;
-			pwExportInfo.DataGroup.GetCounts(true, out uTotalGroups, out uTotalEntries);
+                ExportGroup(pwExportInfo.DataGroup, strFavsSub, slLogger,
+                    uTotalEntries, ref uEntriesProcessed, pwExportInfo);
+            }
+            else // In root
+            {
+                DeletePreviousExport(strFavsRoot, slLogger);
+                ExportGroup(pwExportInfo.DataGroup, strFavsRoot, slLogger,
+                    uTotalEntries, ref uEntriesProcessed, pwExportInfo);
+            }
 
-			if(!m_bInRoot) // In folder
-			{
-				string strRootName = GetFolderName(false, pwExportInfo, pg);
+            Debug.Assert(uEntriesProcessed == uTotalEntries);
+            return true;
+        }
 
-				string strFavsSub = UrlUtil.EnsureTerminatingSeparator(
-					strFavsRoot, false) + strRootName;
-				if(Directory.Exists(strFavsSub))
-				{
-					Directory.Delete(strFavsSub, true);
-					WaitForDirCommit(strFavsSub, false);
-				}
+        private static void DeletePreviousExport(string strDir, IStatusLogger slLogger)
+        {
+            List<string> vDirsToDelete = new List<string>();
 
-				ExportGroup(pwExportInfo.DataGroup, strFavsSub, slLogger,
-					uTotalEntries, ref uEntriesProcessed, pwExportInfo);
-			}
-			else // In root
-			{
-				DeletePreviousExport(strFavsRoot, slLogger);
-				ExportGroup(pwExportInfo.DataGroup, strFavsRoot, slLogger,
-					uTotalEntries, ref uEntriesProcessed, pwExportInfo);
-			}
+            try
+            {
+                List<string> lUrlFiles = UrlUtil.GetFilePaths(strDir, "*.url",
+                    SearchOption.AllDirectories);
+                List<string> lLnkFiles = UrlUtil.GetFilePaths(strDir, "*.lnk",
+                    SearchOption.AllDirectories);
 
-			Debug.Assert(uEntriesProcessed == uTotalEntries);
-			return true;
-		}
+                List<string> lFiles = new List<string>();
+                lFiles.AddRange(lUrlFiles);
+                lFiles.AddRange(lLnkFiles);
 
-		private static void ExportGroup(PwGroup pg, string strDir, IStatusLogger slLogger,
-			uint uTotalEntries, ref uint uEntriesProcessed, PwExportInfo pxi)
-		{
-			foreach(PwEntry pe in pg.Entries)
-			{
-				ExportEntry(pe, strDir, pxi);
+                for (int iFile = 0; iFile < lFiles.Count; ++iFile)
+                {
+                    string strFile = lFiles[iFile];
+                    try
+                    {
+                        bool bDelete = false;
 
-				++uEntriesProcessed;
-				if(slLogger != null)
-					slLogger.SetProgress(((uEntriesProcessed * 50U) /
-						uTotalEntries) + 50U);
-			}
+                        if (strFile.EndsWith(".url", StrUtil.CaseIgnoreCmp))
+                        {
+                            IniFile ini = IniFile.Read(strFile, Encoding.Default);
+                            string strType = ini.Get(PwDefs.ShortProductName, IniTypeKey);
+                            bDelete = ((strType != null) && (strType == IniTypeValue));
+                        }
+                        else if (strFile.EndsWith(".lnk", StrUtil.CaseIgnoreCmp))
+                        {
+                            ShellLinkEx sl = ShellLinkEx.Load(strFile);
+                            if (sl != null)
+                                bDelete = ((sl.Description != null) &&
+                                    sl.Description.EndsWith(LnkDescSuffix));
+                        }
+                        else { Debug.Assert(false); }
 
-			foreach(PwGroup pgSub in pg.Groups)
-			{
-				string strGroup = UrlUtil.FilterFileName(pgSub.Name);
-				string strSub = (UrlUtil.EnsureTerminatingSeparator(strDir, false) +
-					(!string.IsNullOrEmpty(strGroup) ? strGroup : KPRes.Group));
+                        if (bDelete)
+                        {
+                            File.Delete(strFile);
 
-				ExportGroup(pgSub, strSub, slLogger, uTotalEntries,
-					ref uEntriesProcessed, pxi);
-			}
-		}
+                            string strCont = UrlUtil.GetFileDirectory(strFile, false, true);
+                            if (vDirsToDelete.IndexOf(strCont) < 0)
+                                vDirsToDelete.Add(strCont);
+                        }
+                    }
+                    catch (Exception) { Debug.Assert(false); }
 
-		private static void ExportEntry(PwEntry pe, string strDir, PwExportInfo pxi)
-		{
-			PwDatabase pd = ((pxi != null) ? pxi.ContextDatabase : null);
-			SprContext ctxUrl = new SprContext(pe, pd, SprCompileFlags.NonActive, false, true);
-			SprContext ctx = ctxUrl.WithoutContentTransformations();
+                    if (slLogger != null)
+                        slLogger.SetProgress(((uint)iFile * 50U) / (uint)lFiles.Count);
+                }
 
-			KeyValuePair<string, string>? okvpCmd = null;
-			string strUrl = SprEngine.Compile(pe.Strings.ReadSafe(PwDefs.UrlField), ctxUrl);
-			if(WinUtil.IsCommandLineUrl(strUrl))
-			{
-				strUrl = WinUtil.GetCommandLineFromUrl(strUrl);
+                bool bDeleted = true;
+                while (bDeleted)
+                {
+                    bDeleted = false;
 
-				if(!NativeLib.IsUnix()) // LNKs only supported on Windows
-				{
-					string strApp, strArgs;
-					StrUtil.SplitCommandLine(strUrl, out strApp, out strArgs);
+                    for (int i = (vDirsToDelete.Count - 1); i >= 0; --i)
+                    {
+                        try
+                        {
+                            Directory.Delete(vDirsToDelete[i], false);
+                            WaitForDirCommit(vDirsToDelete[i], false);
 
-					if(!string.IsNullOrEmpty(strApp))
-						okvpCmd = new KeyValuePair<string, string>(strApp, strArgs);
-				}
-			}
-			if(string.IsNullOrEmpty(strUrl)) return;
-			bool bLnk = okvpCmd.HasValue;
+                            vDirsToDelete.RemoveAt(i);
+                            bDeleted = true;
+                        }
+                        catch (Exception) { } // E.g. not empty
+                    }
+                }
+            }
+            catch (Exception) { Debug.Assert(false); }
+        }
 
-			string strTitleCmp = SprEngine.Compile(pe.Strings.ReadSafe(PwDefs.TitleField), ctx);
-			if(string.IsNullOrEmpty(strTitleCmp)) strTitleCmp = KPRes.Entry;
-			string strTitle = Program.Config.Defaults.WinFavsFileNamePrefix + strTitleCmp;
+        private static void ExportEntry(PwEntry pe, string strDir, PwExportInfo pxi)
+        {
+            PwDatabase pd = ((pxi != null) ? pxi.ContextDatabase : null);
+            SprContext ctxUrl = new SprContext(pe, pd, SprCompileFlags.NonActive, false, true);
+            SprContext ctx = ctxUrl.WithoutContentTransformations();
 
-			string strSuffix = Program.Config.Defaults.WinFavsFileNameSuffix +
-				(bLnk ? ".lnk" : ".url");
-			strSuffix = UrlUtil.FilterFileName(strSuffix);
+            KeyValuePair<string, string>? okvpCmd = null;
+            string strUrl = SprEngine.Compile(pe.Strings.ReadSafe(PwDefs.UrlField), ctxUrl);
+            if (WinUtil.IsCommandLineUrl(strUrl))
+            {
+                strUrl = WinUtil.GetCommandLineFromUrl(strUrl);
 
-			string strFileBase = (UrlUtil.EnsureTerminatingSeparator(strDir,
-				false) + UrlUtil.FilterFileName(strTitle));
-			string strFile = strFileBase + strSuffix;
-			int iFind = 2;
-			while(File.Exists(strFile))
-			{
-				strFile = strFileBase + " (" + iFind.ToString() + ")" + strSuffix;
-				++iFind;
-			}
+                string strApp, strArgs;
+                StrUtil.SplitCommandLine(strUrl, out strApp, out strArgs);
 
-			if(!Directory.Exists(strDir))
-			{
-				try { Directory.CreateDirectory(strDir); }
-				catch(Exception exDir)
-				{
-					throw new Exception(strDir + MessageService.NewParagraph + exDir.Message);
-				}
+                if (!string.IsNullOrEmpty(strApp))
+                    okvpCmd = new KeyValuePair<string, string>(strApp, strArgs);
+            }
+            if (string.IsNullOrEmpty(strUrl)) return;
+            bool bLnk = okvpCmd.HasValue;
 
-				WaitForDirCommit(strDir, true);
-			}
+            string strTitleCmp = SprEngine.Compile(pe.Strings.ReadSafe(PwDefs.TitleField), ctx);
+            if (string.IsNullOrEmpty(strTitleCmp)) strTitleCmp = KPRes.Entry;
+            string strTitle = Program.Config.Defaults.WinFavsFileNamePrefix + strTitleCmp;
 
-			try
-			{
-				if(bLnk)
-				{
-					int ccMaxDesc = NativeMethods.INFOTIPSIZE - 1 - LnkDescSuffix.Length;
-					string strDesc = StrUtil.CompactString3Dots(strUrl, ccMaxDesc) +
-						LnkDescSuffix;
+            string strSuffix = Program.Config.Defaults.WinFavsFileNameSuffix +
+                (bLnk ? ".lnk" : ".url");
+            strSuffix = UrlUtil.FilterFileName(strSuffix);
 
-					ShellLinkEx sl = new ShellLinkEx(okvpCmd.Value.Key,
-						okvpCmd.Value.Value, strDesc);
-					sl.Save(strFile);
-				}
-				else
-				{
-					StringBuilder sb = new StringBuilder();
-					sb.AppendLine(@"[InternetShortcut]");
-					sb.AppendLine(@"URL=" + strUrl); // No additional line break
-					sb.AppendLine(@"[" + PwDefs.ShortProductName + @"]");
-					sb.AppendLine(IniTypeKey + @"=" + IniTypeValue);
-					// Terminating line break is important
+            string strFileBase = (UrlUtil.EnsureTerminatingSeparator(strDir,
+                false) + UrlUtil.FilterFileName(strTitle));
+            string strFile = strFileBase + strSuffix;
+            int iFind = 2;
+            while (File.Exists(strFile))
+            {
+                strFile = strFileBase + " (" + iFind.ToString() + ")" + strSuffix;
+                ++iFind;
+            }
 
-					File.WriteAllText(strFile, sb.ToString(), Encoding.Default);
-				}
-			}
-			catch(Exception exWrite)
-			{
-				throw new Exception(strFile + MessageService.NewParagraph + exWrite.Message);
-			}
-		}
+            if (!Directory.Exists(strDir))
+            {
+                try { Directory.CreateDirectory(strDir); }
+                catch (Exception exDir)
+                {
+                    throw new Exception(strDir + MessageService.NewParagraph + exDir.Message);
+                }
 
-		private static void WaitForDirCommit(string strDir, bool bRequireExists)
-		{
-			for(int i = 0; i < 20; ++i)
-			{
-				bool bExists = Directory.Exists(strDir);
-				if(bExists && bRequireExists) return;
-				if(!bExists && !bRequireExists) return;
+                WaitForDirCommit(strDir, true);
+            }
 
-				Thread.Sleep(50);
-			}
-		}
+            try
+            {
+                if (bLnk)
+                {
+                    int ccMaxDesc = NativeMethods.INFOTIPSIZE - 1 - LnkDescSuffix.Length;
+                    string strDesc = StrUtil.CompactString3Dots(strUrl, ccMaxDesc) +
+                        LnkDescSuffix;
 
-		private static void DeletePreviousExport(string strDir, IStatusLogger slLogger)
-		{
-			List<string> vDirsToDelete = new List<string>();
+                    ShellLinkEx sl = new ShellLinkEx(okvpCmd.Value.Key,
+                        okvpCmd.Value.Value, strDesc);
+                    sl.Save(strFile);
+                }
+                else
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine(@"[InternetShortcut]");
+                    sb.AppendLine(@"URL=" + strUrl); // No additional line break
+                    sb.AppendLine(@"[" + PwDefs.ShortProductName + @"]");
+                    sb.AppendLine(IniTypeKey + @"=" + IniTypeValue);
+                    // Terminating line break is important
 
-			try
-			{
-				List<string> lUrlFiles = UrlUtil.GetFilePaths(strDir, "*.url",
-					SearchOption.AllDirectories);
-				List<string> lLnkFiles = UrlUtil.GetFilePaths(strDir, "*.lnk",
-					SearchOption.AllDirectories);
+                    File.WriteAllText(strFile, sb.ToString(), Encoding.Default);
+                }
+            }
+            catch (Exception exWrite)
+            {
+                throw new Exception(strFile + MessageService.NewParagraph + exWrite.Message);
+            }
+        }
 
-				List<string> lFiles = new List<string>();
-				lFiles.AddRange(lUrlFiles);
-				lFiles.AddRange(lLnkFiles);
+        private static void ExportGroup(PwGroup pg, string strDir, IStatusLogger slLogger,
+            uint uTotalEntries, ref uint uEntriesProcessed, PwExportInfo pxi)
+        {
+            foreach (PwEntry pe in pg.Entries)
+            {
+                ExportEntry(pe, strDir, pxi);
 
-				for(int iFile = 0; iFile < lFiles.Count; ++iFile)
-				{
-					string strFile = lFiles[iFile];
-					try
-					{
-						bool bDelete = false;
+                ++uEntriesProcessed;
+                if (slLogger != null)
+                    slLogger.SetProgress(((uEntriesProcessed * 50U) /
+                        uTotalEntries) + 50U);
+            }
 
-						if(strFile.EndsWith(".url", StrUtil.CaseIgnoreCmp))
-						{
-							IniFile ini = IniFile.Read(strFile, Encoding.Default);
-							string strType = ini.Get(PwDefs.ShortProductName, IniTypeKey);
-							bDelete = ((strType != null) && (strType == IniTypeValue));
-						}
-						else if(strFile.EndsWith(".lnk", StrUtil.CaseIgnoreCmp))
-						{
-							ShellLinkEx sl = ShellLinkEx.Load(strFile);
-							if(sl != null)
-								bDelete = ((sl.Description != null) &&
-									sl.Description.EndsWith(LnkDescSuffix));
-						}
-						else { Debug.Assert(false); }
+            foreach (PwGroup pgSub in pg.Groups)
+            {
+                string strGroup = UrlUtil.FilterFileName(pgSub.Name);
+                string strSub = (UrlUtil.EnsureTerminatingSeparator(strDir, false) +
+                    (!string.IsNullOrEmpty(strGroup) ? strGroup : KPRes.Group));
 
-						if(bDelete)
-						{
-							File.Delete(strFile);
+                ExportGroup(pgSub, strSub, slLogger, uTotalEntries,
+                    ref uEntriesProcessed, pxi);
+            }
+        }
 
-							string strCont = UrlUtil.GetFileDirectory(strFile, false, true);
-							if(vDirsToDelete.IndexOf(strCont) < 0)
-								vDirsToDelete.Add(strCont);
-						}
-					}
-					catch(Exception) { Debug.Assert(false); }
+        private static string GetFolderName(bool bForceRoot, PwExportInfo pwExportInfo,
+                                            PwGroup pg)
+        {
+            string strBaseName = UrlUtil.FilterFileName(string.IsNullOrEmpty(
+                Program.Config.Defaults.WinFavsBaseFolderName) ? PwDefs.ShortProductName :
+                Program.Config.Defaults.WinFavsBaseFolderName);
+            if (bForceRoot || (pwExportInfo == null) || (pg == null))
+                return strBaseName;
 
-					if(slLogger != null)
-						slLogger.SetProgress(((uint)iFile * 50U) / (uint)lFiles.Count);
-				}
+            string strGroup = UrlUtil.FilterFileName(pg.Name);
+            string strRootName = strBaseName;
+            if (strGroup.Length > 0) strRootName += (" - " + strGroup);
 
-				bool bDeleted = true;
-				while(bDeleted)
-				{
-					bDeleted = false;
+            if (pwExportInfo.ContextDatabase != null)
+            {
+                if (pg == pwExportInfo.ContextDatabase.RootGroup)
+                    strRootName = strBaseName;
+            }
 
-					for(int i = (vDirsToDelete.Count - 1); i >= 0; --i)
-					{
-						try
-						{
-							Directory.Delete(vDirsToDelete[i], false);
-							WaitForDirCommit(vDirsToDelete[i], false);
+            return strRootName;
+        }
 
-							vDirsToDelete.RemoveAt(i);
-							bDeleted = true;
-						}
-						catch(Exception) { } // E.g. not empty
-					}
-				}
-			}
-			catch(Exception) { Debug.Assert(false); }
-		}
-	}
+        private static void WaitForDirCommit(string strDir, bool bRequireExists)
+        {
+            for (int i = 0; i < 20; ++i)
+            {
+                bool bExists = Directory.Exists(strDir);
+                if (bExists && bRequireExists) return;
+                if (!bExists && !bRequireExists) return;
+
+                Thread.Sleep(50);
+            }
+        }
+    }
 }

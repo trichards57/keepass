@@ -280,7 +280,7 @@ namespace KeePass.UI
 			{
 				if((m.Msg == NativeMethods.WM_CONTEXTMENU) && (m_ctxHeader != null) &&
 					(this.View == View.Details) && (this.HeaderStyle !=
-					ColumnHeaderStyle.None) && !NativeLib.IsUnix())
+					ColumnHeaderStyle.None))
 				{
 					IntPtr hList = this.Handle;
 					if(hList != IntPtr.Zero)

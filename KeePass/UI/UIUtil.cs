@@ -3587,7 +3587,7 @@ namespace KeePass.UI
 			// Throws under Mono 4.2.1 on MacOS;
 			// https://sourceforge.net/p/keepass/discussion/329221/thread/7c096cfc/
 			try { return SystemInformation.SmallIconSize; }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			return new Size(DpiUtil.ScaleIntX(16), DpiUtil.ScaleIntY(16));
 		}

@@ -235,7 +235,7 @@ namespace KeePassLib.Serialization
 					if(sec != null) pbSec = sec.GetSecurityDescriptorBinaryForm();
 #endif
 				}
-				catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+				catch(Exception) { Debug.Assert(false); }
 
 				// if((long)(faBase & FileAttributes.ReadOnly) != 0)
 				//	throw new UnauthorizedAccessException();
@@ -327,7 +327,6 @@ namespace KeePassLib.Serialization
 		{
 			try
 			{
-				if(NativeLib.IsUnix()) return;
 				if(!m_iocBase.IsLocalFile()) return;
 				if(TxfIsUnusable()) return;
 

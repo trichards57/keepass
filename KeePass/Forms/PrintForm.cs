@@ -316,7 +316,7 @@ namespace KeePass.Forms
 			m_btnCancel.Enabled = !bBlock;
 
 			try { m_wbMain.Visible = !bBlock; }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			if(!bBlock && (m_cPreBlock != null)) UIUtil.SetFocus(m_cPreBlock, this);
 		}
@@ -349,7 +349,7 @@ namespace KeePass.Forms
 			string strHtml = GenerateHtmlDocument(true);
 
 			try { UIUtil.SetWebBrowserDocument(m_wbMain, strHtml); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); } // Throws in Mono 2.0+
+			catch(Exception) { Debug.Assert(false); } // Throws in Mono 2.0+
 			try { m_wbMain.AllowNavigation = false; }
 			catch(Exception) { Debug.Assert(false); }
 

@@ -82,7 +82,6 @@ namespace KeePass.UI
 		private static void EnsureInitialized()
 		{
 			if(m_bInitialized) return;
-			if(NativeLib.IsUnix()) { m_bInitialized = true; return; }
 
 			try
 			{
@@ -118,7 +117,6 @@ namespace KeePass.UI
 		public static void ConfigureProcess()
 		{
 			Debug.Assert(!m_bInitialized); // Configure process before use
-			if(NativeLib.IsUnix()) return;
 
 			// try
 			// {

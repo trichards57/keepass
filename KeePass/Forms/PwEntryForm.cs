@@ -1161,7 +1161,7 @@ namespace KeePass.Forms
 				ushort usEsc = NativeMethods.GetAsyncKeyState((int)Keys.Escape);
 				if((usEsc & 0x8000) != 0) m_bForceClosing = false;
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		private void OnFormClosed(object sender, FormClosedEventArgs e)

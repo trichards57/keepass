@@ -17,241 +17,234 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+using KeePass.Util;
+using KeePass.Util.Spr;
+using KeePassLib;
+using KeePassLib.Native;
+using KeePassLib.Utility;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-using KeePass.Util;
-using KeePass.Util.Spr;
-
-using KeePassLib;
-using KeePassLib.Native;
-using KeePassLib.Utility;
-
 namespace KeePass.App
 {
-	public enum AppHelpSource
-	{
-		Local,
-		Online
-	}
+    public enum AppHelpSource
+    {
+        Local,
+        Online
+    }
 
-	/// <summary>
-	/// Application help provider. Starts an external application that
-	/// shows help on a specified topic.
-	/// </summary>
-	public static class AppHelp
-	{
-		private static string g_strLocalHelpFile = null;
+    /// <summary>
+    /// Application help provider. Starts an external application that
+    /// shows help on a specified topic.
+    /// </summary>
+    public static class AppHelp
+    {
+        private static string g_strLocalHelpFile = null;
 
-		/// <summary>
-		/// Get the path of the local help file.
-		/// </summary>
-		public static string LocalHelpFile
-		{
-			get
-			{
-				if(g_strLocalHelpFile == null)
-					g_strLocalHelpFile = UrlUtil.StripExtension(
-						WinUtil.GetExecutable()) + ".chm";
+        public static bool LocalHelpAvailable
+        {
+            get
+            {
+                try
+                {
+                    string strFile = AppHelp.LocalHelpFile;
+                    if (!string.IsNullOrEmpty(strFile))
+                        return File.Exists(strFile);
+                }
+                catch (Exception) { Debug.Assert(false); }
 
-				return g_strLocalHelpFile;
-			}
-		}
+                return false;
+            }
+        }
 
-		public static bool LocalHelpAvailable
-		{
-			get
-			{
-				try
-				{
-					string strFile = AppHelp.LocalHelpFile;
-					if(!string.IsNullOrEmpty(strFile))
-						return File.Exists(strFile);
-				}
-				catch(Exception) { Debug.Assert(false); }
+        /// <summary>
+        /// Get the path of the local help file.
+        /// </summary>
+        public static string LocalHelpFile
+        {
+            get
+            {
+                if (g_strLocalHelpFile == null)
+                    g_strLocalHelpFile = UrlUtil.StripExtension(
+                        WinUtil.GetExecutable()) + ".chm";
 
-				return false;
-			}
-		}
+                return g_strLocalHelpFile;
+            }
+        }
 
-		public static AppHelpSource PreferredHelpSource
-		{
-			get
-			{
-				return (Program.Config.Application.HelpUseLocal ?
-					AppHelpSource.Local : AppHelpSource.Online);
-			}
+        public static AppHelpSource PreferredHelpSource
+        {
+            get
+            {
+                return (Program.Config.Application.HelpUseLocal ?
+                    AppHelpSource.Local : AppHelpSource.Online);
+            }
 
-			set
-			{
-				Program.Config.Application.HelpUseLocal =
-					(value == AppHelpSource.Local);
-			}
-		}
+            set
+            {
+                Program.Config.Application.HelpUseLocal =
+                    (value == AppHelpSource.Local);
+            }
+        }
 
-		/// <summary>
-		/// Show a help page.
-		/// </summary>
-		/// <param name="strTopic">Topic name. May be <c>null</c>.</param>
-		/// <param name="strSection">Section name. May be <c>null</c>. Must not start
-		/// with the '#' character.</param>
-		public static void ShowHelp(string strTopic, string strSection)
-		{
-			AppHelp.ShowHelp(strTopic, strSection, false);
-		}
+        /// <summary>
+        /// Show a help page.
+        /// </summary>
+        /// <param name="strTopic">Topic name. May be <c>null</c>.</param>
+        /// <param name="strSection">Section name. May be <c>null</c>. Must not start
+        /// with the '#' character.</param>
+        public static void ShowHelp(string strTopic, string strSection)
+        {
+            AppHelp.ShowHelp(strTopic, strSection, false);
+        }
 
-		/// <summary>
-		/// Show a help page.
-		/// </summary>
-		/// <param name="strTopic">Topic name. May be <c>null</c>.</param>
-		/// <param name="strSection">Section name. May be <c>null</c>.
-		/// Must not start with the '#' character.</param>
-		/// <param name="bPreferLocal">Specify if the local help file should be
-		/// preferred. If no local help file is available, the online help
-		/// system will be used, independent of the <c>bPreferLocal</c> flag.</param>
-		public static void ShowHelp(string strTopic, string strSection, bool bPreferLocal)
-		{
-			if(ShowHelpOverride(strTopic, strSection)) return;
+        /// <summary>
+        /// Show a help page.
+        /// </summary>
+        /// <param name="strTopic">Topic name. May be <c>null</c>.</param>
+        /// <param name="strSection">Section name. May be <c>null</c>.
+        /// Must not start with the '#' character.</param>
+        /// <param name="bPreferLocal">Specify if the local help file should be
+        /// preferred. If no local help file is available, the online help
+        /// system will be used, independent of the <c>bPreferLocal</c> flag.</param>
+        public static void ShowHelp(string strTopic, string strSection, bool bPreferLocal)
+        {
+            if (ShowHelpOverride(strTopic, strSection)) return;
 
-			if(AppHelp.LocalHelpAvailable)
-			{
-				if(bPreferLocal || (AppHelp.PreferredHelpSource == AppHelpSource.Local))
-					ShowHelpLocal(strTopic, strSection);
-				else
-					ShowHelpOnline(strTopic, strSection);
-			}
-			else ShowHelpOnline(strTopic, strSection);
-		}
+            if (AppHelp.LocalHelpAvailable)
+            {
+                if (bPreferLocal || (AppHelp.PreferredHelpSource == AppHelpSource.Local))
+                    ShowHelpLocal(strTopic, strSection);
+                else
+                    ShowHelpOnline(strTopic, strSection);
+            }
+            else ShowHelpOnline(strTopic, strSection);
+        }
 
-		private static void ShowHelpLocal(string strTopic, string strSection)
-		{
-			string strFile = AppHelp.LocalHelpFile;
-			if(string.IsNullOrEmpty(strFile)) { Debug.Assert(false); return; }
+        internal static string GetOnlineUrl(string strTopic, string strSection)
+        {
+            return (PwDefs.HelpUrl + GetRelativeUrl(strTopic, strSection));
+        }
 
-			// Unblock CHM file for proper display of help contents
-			WinUtil.RemoveZoneIdentifier(strFile);
+        private static string GetRelativeUrl(string strTopic, string strSection)
+        {
+            StringBuilder sb = new StringBuilder();
 
-			string strCmd = "\"ms-its:" + strFile;
-			if(!string.IsNullOrEmpty(strTopic))
-			{
-				strCmd += "::/help/" + strTopic + ".html";
+            const string strDefault = AppDefs.HelpTopics.Default;
+            sb.Append(string.IsNullOrEmpty(strTopic) ? strDefault : strTopic);
+            sb.Append(".html");
 
-				if(!string.IsNullOrEmpty(strSection))
-					strCmd += "#" + strSection;
-			}
-			strCmd += "\"";
+            if (!string.IsNullOrEmpty(strSection))
+            {
+                sb.Append('#');
+                sb.Append(strSection);
+            }
 
-			if(ShowHelpLocalKcv(strCmd)) return;
+            return sb.ToString();
+        }
 
-			string strDisp = strCmd;
-			try
-			{
-				if(NativeLib.IsUnix())
-					NativeLib.StartProcess(strCmd.Trim('\"'));
-				else // Windows
-				{
-					strDisp = "HH.exe " + strDisp;
-					NativeLib.StartProcess(WinUtil.LocateSystemApp(
-						"hh.exe"), strCmd);
-				}
-			}
-			catch(Exception ex)
-			{
-				MessageService.ShowWarning(strDisp, ex);
-			}
-		}
+        private static void ShowHelpLocal(string strTopic, string strSection)
+        {
+            string strFile = AppHelp.LocalHelpFile;
+            if (string.IsNullOrEmpty(strFile)) { Debug.Assert(false); return; }
 
-		private static bool ShowHelpLocalKcv(string strQuotedMsIts)
-		{
-			try
-			{
-				if(!NativeLib.IsUnix()) return false;
+            // Unblock CHM file for proper display of help contents
+            WinUtil.RemoveZoneIdentifier(strFile);
 
-				string strApp = AppLocator.FindAppUnix("kchmviewer");
-				if(string.IsNullOrEmpty(strApp)) return false;
+            string strCmd = "\"ms-its:" + strFile;
+            if (!string.IsNullOrEmpty(strTopic))
+            {
+                strCmd += "::/help/" + strTopic + ".html";
 
-				string strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "::");
-				if(string.IsNullOrEmpty(strFile))
-					strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "\"");
-				if(string.IsNullOrEmpty(strFile))
-				{
-					Debug.Assert(false);
-					return false;
-				}
+                if (!string.IsNullOrEmpty(strSection))
+                    strCmd += "#" + strSection;
+            }
+            strCmd += "\"";
 
-				string strUrl = StrUtil.GetStringBetween(strQuotedMsIts, 0, "::", "\"");
+            if (ShowHelpLocalKcv(strCmd)) return;
 
-				// https://www.ulduzsoft.com/linux/kchmviewer/kchmviewer-integration-reference/
-				string strArgs = "\"" + SprEncoding.EncodeForCommandLine(strFile) + "\"";
-				if(!string.IsNullOrEmpty(strUrl))
-					strArgs = "-showPage \"" + SprEncoding.EncodeForCommandLine(
-						strUrl) + "\" " + strArgs;
+            string strDisp = strCmd;
+            try
+            {
+                strDisp = "HH.exe " + strDisp;
+                NativeLib.StartProcess(WinUtil.LocateSystemApp(
+                    "hh.exe"), strCmd);
+            }
+            catch (Exception ex)
+            {
+                MessageService.ShowWarning(strDisp, ex);
+            }
+        }
 
-				NativeLib.StartProcess(strApp, strArgs);
-				return true;
-			}
-			catch(Exception) { Debug.Assert(false); }
+        private static bool ShowHelpLocalKcv(string strQuotedMsIts)
+        {
+            try
+            {
+                if (!NativeLib.IsUnix()) return false;
 
-			return false;
-		}
+                string strApp = AppLocator.FindAppUnix("kchmviewer");
+                if (string.IsNullOrEmpty(strApp)) return false;
 
-		private static void ShowHelpOnline(string strTopic, string strSection)
-		{
-			string strUrl = GetOnlineUrl(strTopic, strSection);
-			WinUtil.OpenUrl(strUrl, null);
-		}
+                string strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "::");
+                if (string.IsNullOrEmpty(strFile))
+                    strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "\"");
+                if (string.IsNullOrEmpty(strFile))
+                {
+                    Debug.Assert(false);
+                    return false;
+                }
 
-		private static bool ShowHelpOverride(string strTopic, string strSection)
-		{
-			string strUrl = Program.Config.Application.HelpUrl;
-			if(string.IsNullOrEmpty(strUrl)) return false;
+                string strUrl = StrUtil.GetStringBetween(strQuotedMsIts, 0, "::", "\"");
 
-			string strRel = GetRelativeUrl(strTopic, strSection);
+                // https://www.ulduzsoft.com/linux/kchmviewer/kchmviewer-integration-reference/
+                string strArgs = "\"" + SprEncoding.EncodeForCommandLine(strFile) + "\"";
+                if (!string.IsNullOrEmpty(strUrl))
+                    strArgs = "-showPage \"" + SprEncoding.EncodeForCommandLine(
+                        strUrl) + "\" " + strArgs;
 
-			WinUtil.OpenUrl(strUrl, null, true, strRel);
-			return true;
-		}
+                NativeLib.StartProcess(strApp, strArgs);
+                return true;
+            }
+            catch (Exception) { Debug.Assert(false); }
 
-		private static string GetRelativeUrl(string strTopic, string strSection)
-		{
-			StringBuilder sb = new StringBuilder();
+            return false;
+        }
 
-			const string strDefault = AppDefs.HelpTopics.Default;
-			sb.Append(string.IsNullOrEmpty(strTopic) ? strDefault : strTopic);
-			sb.Append(".html");
+        private static void ShowHelpOnline(string strTopic, string strSection)
+        {
+            string strUrl = GetOnlineUrl(strTopic, strSection);
+            WinUtil.OpenUrl(strUrl, null);
+        }
 
-			if(!string.IsNullOrEmpty(strSection))
-			{
-				sb.Append('#');
-				sb.Append(strSection);
-			}
+        private static bool ShowHelpOverride(string strTopic, string strSection)
+        {
+            string strUrl = Program.Config.Application.HelpUrl;
+            if (string.IsNullOrEmpty(strUrl)) return false;
 
-			return sb.ToString();
-		}
+            string strRel = GetRelativeUrl(strTopic, strSection);
 
-		internal static string GetOnlineUrl(string strTopic, string strSection)
-		{
-			return (PwDefs.HelpUrl + GetRelativeUrl(strTopic, strSection));
-		}
+            WinUtil.OpenUrl(strUrl, null, true, strRel);
+            return true;
+        }
 
-		// internal static void SetHelp(Form f, string strTopic, string strSection)
-		// {
-		//	if(f == null) { Debug.Assert(false); return; }
-		//	Debug.Assert(!f.HelpButton);
-		//	f.HelpButton = true;
-		//	SetHelp((Control)f, strTopic, strSection);
-		// }
-		// internal static void SetHelp(Control c, string strTopic, string strSection)
-		// {
-		//	if(c == null) { Debug.Assert(false); return; }
-		//	c.HelpRequested += delegate(object sender, HelpEventArgs e)
-		//	{
-		//		if(e == null) { Debug.Assert(false); return; }
-		//		e.Handled = true;
-		//		AppHelp.ShowHelp(strTopic, strSection);
-		//	};
-		// }
-	}
+        // internal static void SetHelp(Form f, string strTopic, string strSection)
+        // {
+        //	if(f == null) { Debug.Assert(false); return; }
+        //	Debug.Assert(!f.HelpButton);
+        //	f.HelpButton = true;
+        //	SetHelp((Control)f, strTopic, strSection);
+        // }
+        // internal static void SetHelp(Control c, string strTopic, string strSection)
+        // {
+        //	if(c == null) { Debug.Assert(false); return; }
+        //	c.HelpRequested += delegate(object sender, HelpEventArgs e)
+        //	{
+        //		if(e == null) { Debug.Assert(false); return; }
+        //		e.Handled = true;
+        //		AppHelp.ShowHelp(strTopic, strSection);
+        //	};
+        // }
+    }
 }

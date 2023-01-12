@@ -267,7 +267,7 @@ namespace KeePass.Forms
 			if(!m_cbKeyFile.Enabled && !m_cbKeyFile.Checked)
 				UIUtil.SetEnabledFast(false, m_cmbKeyFile, m_btnOpenKeyFile);
 
-			if(WinUtil.IsWindows9x || NativeLib.IsUnix())
+			if(WinUtil.IsWindows9x)
 			{
 				UIUtil.SetChecked(m_cbUserAccount, false);
 				UIUtil.SetEnabled(m_cbUserAccount, false);

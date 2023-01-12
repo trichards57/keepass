@@ -183,13 +183,10 @@ namespace KeePass.Util
 
 		public void AddWebBrowserPrintContent()
 		{
-			if(!NativeLib.IsUnix())
-			{
 				// MSHTML may create and forget temporary files under
 				// C:\\Users\\USER\\AppData\\Local\\Temp\\*.htm
 				// (e.g. when printing fails)
 				AddContent("*.htm", false);
-			}
 		}
 
 		public string GetTempFileName()

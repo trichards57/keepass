@@ -53,7 +53,7 @@ namespace KeePass.Util
 
 		private static bool PrintHtmlShell(string strHtml)
 		{
-			if(NativeLib.IsUnix()) return false;
+			
 
 			RegistryKey k = null;
 			try
@@ -105,7 +105,6 @@ namespace KeePass.Util
 		private static bool PrintHtmlWB(string strHtml)
 		{
 			// Mono's WebBrowser implementation doesn't support printing
-			if(NativeLib.IsUnix()) return false;
 
 			try
 			{

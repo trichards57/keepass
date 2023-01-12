@@ -47,7 +47,6 @@ namespace KeePass.Util
 		private List<uint> GetChildPids()
 		{
 			List<uint> lPids = new List<uint>();
-			if(KeePassLib.Native.NativeLib.IsUnix()) return lPids;
 
 			try
 			{

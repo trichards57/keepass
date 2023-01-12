@@ -79,9 +79,6 @@ namespace KeePass.Util
 
 			try
 			{
-				// if(SetStringUwp(strData)) { } else
-				if(!NativeLib.IsUnix()) // Windows
-				{
 					if(!OpenW(hOwner, true))
 						throw new InvalidOperationException();
 
@@ -91,16 +88,6 @@ namespace KeePass.Util
 					CloseW();
 
 					if(bFailed) return false;
-				}
-				else if(NativeLib.GetPlatformID() == PlatformID.MacOSX)
-					SetStringM(strData);
-				else if(NativeLib.IsUnix())
-					SetStringU(strData);
-				else
-				{
-					Debug.Assert(false);
-					Clipboard.SetText(strData);
-				}
 			}
 			catch(Exception) { Debug.Assert(false); return false; }
 
@@ -211,24 +198,14 @@ namespace KeePass.Util
 			bool bNativeSuccess = false;
 			try
 			{
-				if(!NativeLib.IsUnix()) // Windows
-				{
+				
 					if(OpenW(IntPtr.Zero, true)) // Clears the clipboard
 					{
 						CloseW();
 						bNativeSuccess = true;
 					}
-				}
-				else if(NativeLib.GetPlatformID() == PlatformID.MacOSX)
-				{
-					SetStringM(string.Empty);
-					bNativeSuccess = true;
-				}
-				else if(NativeLib.IsUnix())
-				{
-					SetStringU(string.Empty);
-					bNativeSuccess = true;
-				}
+				
+				
 			}
 			catch(Exception) { Debug.Assert(false); }
 
@@ -291,7 +268,6 @@ namespace KeePass.Util
 
 		public static bool ContainsText()
 		{
-			if(NativeLib.IsUnix()) return true;
 			return Clipboard.ContainsText();
 		}
 
@@ -311,15 +287,7 @@ namespace KeePass.Util
 
 		public static string GetText()
 		{
-			if(!NativeLib.IsUnix()) // Windows
 				return Clipboard.GetText();
-			if(NativeLib.GetPlatformID() == PlatformID.MacOSX)
-				return GetStringM();
-			if(NativeLib.IsUnix())
-				return GetStringU();
-
-			Debug.Assert(false);
-			return Clipboard.GetText();
 		}
 
 		public static byte[] GetData(string strFormat)

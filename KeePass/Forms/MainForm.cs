@@ -85,7 +85,7 @@ namespace KeePass.Forms
 			}
 			catch(Exception)
 			{
-				Debug.Assert(NativeLib.IsUnix());
+				Debug.Assert(false);
 				m_nTaskbarButtonMessage = 0x1E8F46A7; // Unlikely to occur
 				m_bTaskbarButtonMessage = false;
 			}
@@ -514,7 +514,7 @@ namespace KeePass.Forms
 			Program.TriggerSystem.RaiseEvent(EcasEventIDs.AppLoadPost);
 
 			// https://sourceforge.net/p/keepass/discussion/329220/thread/3b696041f8/
-			Debug.Assert(NativeLib.IsUnix() || ((NativeMethods.GetWindowStyle(
+			Debug.Assert( ((NativeMethods.GetWindowStyle(
 				this.Handle) & NativeMethods.WS_VISIBLE) == 0));
 			Debug.Assert(m_bFormLoaded); // Otherwise Show() might be blocked
 			if(m_bHasBlockedShowWindow && this.Visible) Show();
@@ -536,8 +536,6 @@ namespace KeePass.Forms
 			// Workaround for .NET bug: the active control is correct,
 			// but it's not focused;
 			// https://sourceforge.net/p/keepass/discussion/329220/thread/71948bbd52/
-			if(!NativeLib.IsUnix())
-			{
 				Control c = UIUtil.GetActiveControl(this);
 				if((c != null) && !c.Focused && this.Visible && this.Enabled &&
 					(this.WindowState != FormWindowState.Minimized) &&
@@ -549,7 +547,7 @@ namespace KeePass.Forms
 					UIUtil.SetFocus(c, this, true);
 					Debug.Assert(c.Focused);
 				}
-			}
+			
 		}
 
 		private void OnFileNew(object sender, EventArgs e)

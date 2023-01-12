@@ -17,107 +17,100 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Text;
-
 using KeePass.Resources;
-
 using KeePassLib;
 using KeePassLib.Interfaces;
-using KeePassLib.Native;
 using KeePassLib.Utility;
+using System;
+using System.Drawing;
+using System.IO;
 
 namespace KeePass.DataExchange.Formats
 {
-	internal sealed class KeePassKdb1x : FileFormatProvider
-	{
-		public override bool SupportsImport { get { return true; } }
-		public override bool SupportsExport { get { return true; } }
+    internal sealed class KeePassKdb1x : FileFormatProvider
+    {
+        internal const string FileExt1 = "kdb";
+        internal const string FileExt2 = "pwd";
+        public override string ApplicationGroup
+        { get { return PwDefs.ShortProductName; } }
+        public override string DefaultExtension
+        { get { return KeePassKdb1x.FileExt1; } }
+        public override string FormatName
+        { get { return "KeePass KDB (1.x)"; } }
+        public override bool RequiresKey
+        { get { return true; } }
 
-		public override string FormatName { get { return "KeePass KDB (1.x)"; } }
-		public override string DefaultExtension { get { return KeePassKdb1x.FileExt1; } }
-		public override string ApplicationGroup { get { return PwDefs.ShortProductName; } }
+        public override Image SmallIcon
+        {
+            get { return KeePass.Properties.Resources.B16x16_KeePass; }
+        }
 
-		public override bool RequiresKey { get { return true; } }
-		public override bool SupportsUuids { get { return true; } }
+        public override bool SupportsExport
+        { get { return true; } }
+        public override bool SupportsImport
+        { get { return true; } }
+        public override bool SupportsUuids
+        { get { return true; } }
 
-		public override Image SmallIcon
-		{
-			get { return KeePass.Properties.Resources.B16x16_KeePass; }
-		}
+        public override bool Export(PwExportInfo pwExportInfo, Stream sOutput,
+            IStatusLogger slLogger)
+        {
+            PwDatabase pd = (pwExportInfo.ContextDatabase ?? new PwDatabase());
 
-		internal const string FileExt1 = "kdb";
-		internal const string FileExt2 = "pwd";
+            string strTempFile = Program.TempFilesPool.GetTempFileName(false);
 
-		public override bool TryBeginImport()
-		{
-			if(NativeLib.IsUnix())
-			{
-				MessageService.ShowWarning(KPRes.KeePassLibCNotWindows,
-					KPRes.KeePassLibCNotWindowsHint);
-				return false;
-			}
+            try
+            {
+                KdbFile kdb = new KdbFile(pd, slLogger);
+                kdb.Save(strTempFile, pwExportInfo.DataGroup);
 
-			Exception exLib;
-			if(!KdbFile.IsLibraryInstalled(out exLib))
-			{
-				MessageService.ShowWarning(KPRes.KeePassLibCNotFound,
-					KPRes.KdbKeePassLibC, exLib);
-				return false;
-			}
+                byte[] pbKdb = File.ReadAllBytes(strTempFile);
+                sOutput.Write(pbKdb, 0, pbKdb.Length);
+                MemUtil.ZeroByteArray(pbKdb);
+            }
+            catch (Exception exKdb)
+            {
+                if (slLogger != null) slLogger.SetText(exKdb.Message, LogStatusType.Error);
 
-			return true;
-		}
+                return false;
+            }
+            finally { Program.TempFilesPool.Delete(strTempFile); }
 
-		public override bool TryBeginExport()
-		{
-			return TryBeginImport();
-		}
+            return true;
+        }
 
-		public override void Import(PwDatabase pwStorage, Stream sInput,
-			IStatusLogger slLogger)
-		{
-			string strTempFile = Program.TempFilesPool.GetTempFileName();
+        public override void Import(PwDatabase pwStorage, Stream sInput,
+            IStatusLogger slLogger)
+        {
+            string strTempFile = Program.TempFilesPool.GetTempFileName();
 
-			BinaryReader br = new BinaryReader(sInput);
-			byte[] pb = br.ReadBytes((int)sInput.Length);
-			br.Close();
-			File.WriteAllBytes(strTempFile, pb);
+            BinaryReader br = new BinaryReader(sInput);
+            byte[] pb = br.ReadBytes((int)sInput.Length);
+            br.Close();
+            File.WriteAllBytes(strTempFile, pb);
 
-			KdbFile kdb = new KdbFile(pwStorage, slLogger);
-			kdb.Load(strTempFile);
+            KdbFile kdb = new KdbFile(pwStorage, slLogger);
+            kdb.Load(strTempFile);
 
-			Program.TempFilesPool.Delete(strTempFile);
-		}
+            Program.TempFilesPool.Delete(strTempFile);
+        }
 
-		public override bool Export(PwExportInfo pwExportInfo, Stream sOutput,
-			IStatusLogger slLogger)
-		{
-			PwDatabase pd = (pwExportInfo.ContextDatabase ?? new PwDatabase());
+        public override bool TryBeginExport()
+        {
+            return TryBeginImport();
+        }
 
-			string strTempFile = Program.TempFilesPool.GetTempFileName(false);
+        public override bool TryBeginImport()
+        {
+            Exception exLib;
+            if (!KdbFile.IsLibraryInstalled(out exLib))
+            {
+                MessageService.ShowWarning(KPRes.KeePassLibCNotFound,
+                    KPRes.KdbKeePassLibC, exLib);
+                return false;
+            }
 
-			try
-			{
-				KdbFile kdb = new KdbFile(pd, slLogger);
-				kdb.Save(strTempFile, pwExportInfo.DataGroup);
-
-				byte[] pbKdb = File.ReadAllBytes(strTempFile);
-				sOutput.Write(pbKdb, 0, pbKdb.Length);
-				MemUtil.ZeroByteArray(pbKdb);
-			}
-			catch(Exception exKdb)
-			{
-				if(slLogger != null) slLogger.SetText(exKdb.Message, LogStatusType.Error);
-
-				return false;
-			}
-			finally { Program.TempFilesPool.Delete(strTempFile); }
-
-			return true;
-		}
-	}
+            return true;
+        }
+    }
 }

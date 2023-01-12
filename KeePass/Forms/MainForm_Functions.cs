@@ -1718,8 +1718,7 @@ namespace KeePass.Forms
 
 			string strAsc = "  \u2191"; // Must have same length
 			string strDsc = "  \u2193"; // Must have same length
-			if(WinUtil.IsWindows9x || WinUtil.IsWindows2000 || WinUtil.IsWindowsXP ||
-				NativeLib.IsUnix())
+			if(WinUtil.IsWindows9x || WinUtil.IsWindows2000 || WinUtil.IsWindowsXP )
 			{
 				strAsc = @"  ^";
 				strDsc = @"  v";
@@ -6138,7 +6137,6 @@ namespace KeePass.Forms
 		private void EnsureAlwaysOnTopOpt()
 		{
 			bool bWish = Program.Config.MainWindow.AlwaysOnTop;
-			if(NativeLib.IsUnix()) { this.TopMost = bWish; return; }
 
 			// Workaround for issue reported in KPB 3475997
 			this.TopMost = false;

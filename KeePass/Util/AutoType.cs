@@ -160,16 +160,6 @@ namespace KeePass.Util
 			if(!pweData.GetAutoTypeEnabled()) return false;
 			if(!AppPolicy.Try(AppPolicyId.AutoType)) return false;
 
-			if(NativeLib.IsUnix())
-			{
-				if(!NativeMethods.TryXDoTool() && !NativeLib.IsWayland())
-				{
-					MessageService.ShowWarning(KPRes.AutoTypeXDoToolRequired,
-						KPRes.PackageInstallHint);
-					return false;
-				}
-			}
-
 			PwDatabase pwDatabase = ctx.Database;
 
 			bool bObfuscate = (pweData.AutoType.ObfuscationOptions !=

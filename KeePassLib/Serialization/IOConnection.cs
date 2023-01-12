@@ -620,11 +620,7 @@ namespace KeePassLib.Serialization
 			Uri uri = new Uri(ioc.Path);
 			Stream s;
 
-			// Mono does not set HttpWebRequest.Method to POST for writes,
-			// so one needs to set the method to PUT explicitly
-			if(NativeLib.IsUnix() && IsHttpWebRequest(uri))
-				s = CreateWebClient(ioc).OpenWrite(uri, WebRequestMethods.Http.Put);
-			else s = CreateWebClient(ioc).OpenWrite(uri);
+			s = CreateWebClient(ioc).OpenWrite(uri);
 
 			return IocStream.WrapIfRequired(s);
 		}

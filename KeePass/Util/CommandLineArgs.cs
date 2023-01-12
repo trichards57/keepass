@@ -101,7 +101,7 @@ namespace KeePass.Util
 
 			if(str.StartsWith("--")) str = str.Remove(0, 2);
 			else if(str.StartsWith("-")) str = str.Remove(0, 1);
-			else if(str.StartsWith("/") && !NativeLib.IsUnix())
+			else if(str.StartsWith("/") )
 				str = str.Remove(0, 1);
 			else return new KeyValuePair<string, string>(string.Empty, str);
 

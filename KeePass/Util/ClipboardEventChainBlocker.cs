@@ -37,7 +37,6 @@ namespace KeePass.Util
 
 		public ClipboardEventChainBlocker()
 		{
-			if(NativeLib.IsUnix()) return; // Unsupported
 
 			m_form = new ClipboardBlockerForm();
 

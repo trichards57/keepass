@@ -204,7 +204,6 @@ namespace KeePass.Util
 
 		private static string FindFirefox()
 		{
-			if(NativeLib.IsUnix()) return FindAppUnix("firefox");
 
 			for(int i = 0; i < 2; ++i)
 			{
@@ -262,7 +261,6 @@ namespace KeePass.Util
 
 		private static string FindOpera()
 		{
-			if(NativeLib.IsUnix()) return FindAppUnix("opera");
 
 			// Old Opera versions
 			const string strOp12 = "SOFTWARE\\Clients\\StartMenuInternet\\Opera\\shell\\open\\command";
@@ -302,15 +300,6 @@ namespace KeePass.Util
 
 		private static string FindChrome()
 		{
-			if(NativeLib.IsUnix())
-			{
-				string str = FindAppUnix("google-chrome");
-				if(!string.IsNullOrEmpty(str)) return str;
-				str = FindAppUnix("chromium");
-				if(!string.IsNullOrEmpty(str)) return str;
-				return FindAppUnix("chromium-browser");
-			}
-
 			string strPath = FindChromeNew();
 			if(string.IsNullOrEmpty(strPath))
 				strPath = FindChromeOld();

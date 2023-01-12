@@ -481,7 +481,7 @@ namespace KeePass
 			// #endif
 
 			try { m_nAppMessage = NativeMethods.RegisterWindowMessage(m_strWndMsgID); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			if(m_cmdLineArgs[AppDefs.CommandLineOptions.ExitAll] != null)
 			{
@@ -720,7 +720,7 @@ namespace KeePass
 				// Do not load libraries from the current working directory
 				if(!NativeMethods.SetDllDirectory(string.Empty)) { Debug.Assert(false); }
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			try
 			{
@@ -730,7 +730,7 @@ namespace KeePass
 					Debug.Assert(false);
 				}
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix() || !WinUtil.IsAtLeastWindowsVista); }
+			catch(Exception) { Debug.Assert(!WinUtil.IsAtLeastWindowsVista); }
 		}
 
 		private static void InitAppContext()
@@ -872,7 +872,7 @@ namespace KeePass
 
 		private static void ActivatePreviousInstance(string[] args)
 		{
-			if((m_nAppMessage == 0) && !NativeLib.IsUnix())
+			if((m_nAppMessage == 0))
 			{
 				Debug.Assert(false);
 				return;

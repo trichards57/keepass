@@ -134,8 +134,7 @@ namespace KeePass.Util
 			}
 			if(si == null)
 			{
-				if(NativeLib.IsUnix()) si = new SiEngineUnix();
-				else si = new SiEngineWin();
+				 si = new SiEngineWin();
 			}
 
 			bool bInter = Program.Config.Integration.AutoTypeAllowInterleaved;

@@ -54,7 +54,7 @@ namespace KeePassLib.Utility
 		private static bool? g_bReq = null;
 		public static bool IsRequired()
 		{
-			if(!g_bReq.HasValue) g_bReq = NativeLib.IsUnix();
+			if(!g_bReq.HasValue) g_bReq = false;
 			return g_bReq.Value;
 		}
 

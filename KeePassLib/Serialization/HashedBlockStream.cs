@@ -220,7 +220,7 @@ namespace KeePassLib.Serialization
 			try { nBufferSize = m_brInput.ReadInt32(); }
 			catch(NullReferenceException) // Mono bug workaround (LaunchPad 783268)
 			{
-				if(!NativeLib.IsUnix()) throw;
+				throw;
 			}
 
 			if(nBufferSize < 0)

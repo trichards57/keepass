@@ -155,7 +155,7 @@ namespace KeePass.UI
 
 			try
 			{
-				if(this.DoubleBuffered && !NativeLib.IsUnix())
+				if(this.DoubleBuffered)
 				{
 					IntPtr p = new IntPtr((int)NativeMethods.TVS_EX_DOUBLEBUFFER);
 					NativeMethods.SendMessage(this.Handle,

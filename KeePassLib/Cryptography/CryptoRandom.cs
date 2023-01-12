@@ -197,7 +197,7 @@ namespace KeePassLib.Cryptography
 				fI32(pt.X);
 				fI32(pt.Y);
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 #endif
 
 			try
@@ -254,7 +254,7 @@ namespace KeePassLib.Cryptography
 				}
 #endif
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			try
 			{

@@ -52,8 +52,6 @@ namespace KeePass.UI
 		{
 			try
 			{
-				if(NativeLib.IsUnix()) return;
-
 				Debug.Assert(Marshal.SizeOf(typeof(int)) == 4); // BOOL = int
 				int i = 0;
 				if(NativeMethods.SystemParametersInfoI32(

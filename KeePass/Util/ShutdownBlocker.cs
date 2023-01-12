@@ -47,7 +47,6 @@ namespace KeePass.Util
 
 			if(g_sdbPrimary != null) return; // We're not the first
 			if(!WinUtil.IsAtLeastWindowsVista) return;
-			if(NativeLib.IsUnix()) return;
 
 			string str = strReason;
 			if(string.IsNullOrEmpty(str)) { Debug.Assert(false); str = "..."; }

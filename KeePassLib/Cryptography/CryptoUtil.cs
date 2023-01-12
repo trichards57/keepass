@@ -201,16 +201,7 @@ namespace KeePassLib.Cryptography
 				// faster (and for key derivations it's not used anyway,
 				// as KeePass uses a native implementation based on
 				// CNG/BCrypt, which is much faster)
-				if(!NativeLib.IsUnix()) return null;
-
-				string strFqn = Assembly.CreateQualifiedName(
-					"System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
-					"System.Security.Cryptography.AesCryptoServiceProvider");
-
-				Type t = Type.GetType(strFqn);
-				if(t == null) return null;
-
-				return (Activator.CreateInstance(t) as SymmetricAlgorithm);
+				return null;
 			}
 			catch(Exception) { Debug.Assert(false); }
 

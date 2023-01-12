@@ -93,15 +93,6 @@ namespace KeePassLib.Security
 				bool? ob = g_obProtectedMemorySupported;
 				if(ob.HasValue) return ob.Value;
 
-				// Mono does not implement any encryption for ProtectedMemory
-				// on Linux (Mono uses DPAPI on Windows);
-				// https://sourceforge.net/p/keepass/feature-requests/1907/
-				if(NativeLib.IsUnix())
-				{
-					g_obProtectedMemorySupported = false;
-					return false;
-				}
-
 				ob = false;
 				try // Test whether ProtectedMemory is supported
 				{

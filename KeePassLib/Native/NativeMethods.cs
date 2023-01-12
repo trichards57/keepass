@@ -117,8 +117,6 @@ namespace KeePassLib.Native
 		{
 			try
 			{
-				if(NativeLib.IsUnix()) return;
-
 				if(IntPtr.Size == 4) ProtectProcessWithDacl32();
 				else ProtectProcessWithDacl64();
 			}

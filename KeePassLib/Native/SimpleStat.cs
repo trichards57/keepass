@@ -106,19 +106,8 @@ namespace KeePassLib.Native
 
 			try
 			{
-				if(!NativeLib.IsUnix()) return false;
+				 return false;
 
-				string strVer = typeof(XmlNode).Assembly.GetName().Version.ToString();
-				string strPosix = "Mono.Posix, Version=" + strVer;
-				Assembly asmPosix = Assembly.Load(strPosix);
-				if(asmPosix == null) { Debug.Assert(false); return false; }
-
-				tUfsi = asmPosix.GetType("Mono.Unix.UnixFileSystemInfo", false);
-				tUfi = asmPosix.GetType("Mono.Unix.UnixFileInfo", false);
-
-				bool b = ((tUfsi != null) && (tUfi != null));
-				Debug.Assert(b);
-				return b;
 			}
 			catch(Exception) { Debug.Assert(false); }
 

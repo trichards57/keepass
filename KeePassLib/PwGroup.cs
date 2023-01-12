@@ -1075,7 +1075,7 @@ namespace KeePassLib
 		internal string GetFullPath(bool bForDisplay, bool bIncludeTopMostGroup)
 		{
 			string strSep;
-			if(bForDisplay) strSep = (NativeLib.IsUnix() ? " - " : " \u2192 ");
+			if(bForDisplay) strSep =  " \u2192 ";
 			else strSep = ".";
 
 			return GetFullPath(strSep, bIncludeTopMostGroup);

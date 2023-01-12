@@ -701,7 +701,7 @@ namespace KeePass.Plugins
 			dlg.AddButton((int)DialogResult.Cancel, KPRes.Ok, null);
 			dlg.LinkClicked += delegate(object sender, LinkClickedEventArgs e)
 			{
-				if((e != null) && (e.LinkText == "F") && !NativeLib.IsUnix())
+				if((e != null) && (e.LinkText == "F"))
 					NativeLib.StartProcess(WinUtil.LocateSystemApp("Notepad.exe"),
 						"\"" + SprEncoding.EncodeForCommandLine(strFile) + "\"");
 			};
@@ -777,23 +777,6 @@ namespace KeePass.Plugins
 
 		private static void PrepareResXFile(string strFilePath)
 		{
-			if(!NativeLib.IsUnix()) return;
-
-			string[] v = File.ReadAllLines(strFilePath, Encoding.UTF8);
-
-			// Fix directory separators in ResX file;
-			// Mono's ResXResourceReader doesn't convert them
-			for(int i = 0; i < (v.Length - 1); ++i)
-			{
-				if((v[i].IndexOf(@"<data") >= 0) && (v[i].IndexOf(
-					@"System.Resources.ResXFileRef") >= 0) && (v[i + 1].IndexOf(
-					@"<value>") >= 0))
-				{
-					v[i + 1] = UrlUtil.ConvertSeparators(v[i + 1]);
-				}
-			}
-
-			File.WriteAllLines(strFilePath, v, new UTF8Encoding(false));
 		}
 
 		private static void PrepareSourceFiles(PlgxPluginInfo plgx)

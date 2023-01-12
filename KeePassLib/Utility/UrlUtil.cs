@@ -53,9 +53,6 @@ namespace KeePassLib.Utility
 					List<char> l = new List<char>();
 					l.Add('/'); // For URLs, also on Windows
 
-					// On Unix-like systems, '\\' is not a separator
-					if(!NativeLib.IsUnix()) l.Add('\\');
-
 					if(!l.Contains(UrlUtil.LocalDirSepChar))
 					{
 						Debug.Assert(false);
@@ -244,16 +241,6 @@ namespace KeePassLib.Utility
 			if(str.Length <= 1) return -1;
 			if(str[0] != '\"') { Debug.Assert(false); return -1; }
 
-			if(NativeLib.IsUnix())
-			{
-				// Find non-escaped quote
-				string strFlt = str.Replace("\\\\", new string(
-					StrUtil.GetUnusedChar(str + "\\\""), 2)); // Same length
-				Match m = Regex.Match(strFlt, "[^\\\\]\\u0022");
-				int i = (((m != null) && m.Success) ? m.Index : -1);
-				return ((i >= 0) ? (i + 1) : -1); // Index of quote
-			}
-
 			// Windows does not allow quotes in folder/file names
 			return str.IndexOf('\"', 1);
 		}
@@ -358,40 +345,6 @@ namespace KeePassLib.Utility
 					return strTargetFile;
 			}
 
-#if (!KeePassLibSD && !KeePassUAP)
-			if(NativeLib.IsUnix())
-			{
-#endif
-				bool bBaseUnc = IsUncPath(strBaseFile);
-				bool bTargetUnc = IsUncPath(strTargetFile);
-				if((!bBaseUnc && bTargetUnc) || (bBaseUnc && !bTargetUnc))
-					return strTargetFile;
-
-				string strBase = GetShortestAbsolutePath(strBaseFile);
-				string strTarget = GetShortestAbsolutePath(strTargetFile);
-				string[] vBase = strBase.Split(UrlUtil.DirSepChars);
-				string[] vTarget = strTarget.Split(UrlUtil.DirSepChars);
-
-				int i = 0;
-				while((i < (vBase.Length - 1)) && (i < (vTarget.Length - 1)) &&
-					(vBase[i] == vTarget[i])) { ++i; }
-
-				StringBuilder sbRel = new StringBuilder();
-				for(int j = i; j < (vBase.Length - 1); ++j)
-				{
-					if(sbRel.Length > 0) sbRel.Append(UrlUtil.LocalDirSepChar);
-					sbRel.Append("..");
-				}
-				for(int k = i; k < vTarget.Length; ++k)
-				{
-					if(sbRel.Length > 0) sbRel.Append(UrlUtil.LocalDirSepChar);
-					sbRel.Append(vTarget[k]);
-				}
-
-				return sbRel.ToString();
-#if (!KeePassLibSD && !KeePassUAP)
-			}
-
 			try // Windows
 			{
 				const int nMaxPath = NativeMethods.MAX_PATH * 2;
@@ -407,7 +360,6 @@ namespace KeePassLib.Utility
 			}
 			catch(Exception) { Debug.Assert(false); }
 			return strTargetFile;
-#endif
 		}
 
 		public static string MakeAbsolutePath(string strBaseFile, string strTargetFile)
@@ -771,12 +723,10 @@ namespace KeePassLib.Utility
 		public static string GetTempPath()
 		{
 			string strDir;
-			if(NativeLib.IsUnix())
-				strDir = NativeMethods.GetUserRuntimeDir();
 #if KeePassUAP
-			else strDir = Windows.Storage.ApplicationData.Current.TemporaryFolder.Path;
+			strDir = Windows.Storage.ApplicationData.Current.TemporaryFolder.Path;
 #else
-			else strDir = Path.GetTempPath();
+			strDir = Path.GetTempPath();
 #endif
 
 			try
