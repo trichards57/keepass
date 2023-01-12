@@ -126,38 +126,6 @@ namespace KeePass.UI
 			//		"EnableWindowsFormsHighDpiAutoResizing", "true");
 			// }
 			// catch(Exception) { Debug.Assert(false); }
-#if DEBUG
-			// Ensure that the .config file enables high DPI features
-			string strExeConfig = WinUtil.GetExecutable() + ".config";
-			if(File.Exists(strExeConfig))
-			{
-				string strCM = "System.Configuration.ConfigurationManager, ";
-				strCM += "System.Configuration, Version=";
-				strCM += Environment.Version.Major.ToString() + ".0.0.0, ";
-				strCM += "Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-
-				Type tCM = Type.GetType(strCM, false);
-				if(tCM != null)
-				{
-					PropertyInfo pi = tCM.GetProperty("AppSettings",
-						(BindingFlags.Public | BindingFlags.Static));
-					if(pi != null)
-					{
-						NameValueCollection nvc = (pi.GetValue(null, null) as
-							NameValueCollection);
-						if(nvc != null)
-						{
-							Debug.Assert(string.Equals(nvc.Get(
-								"EnableWindowsFormsHighDpiAutoResizing"),
-								"true", StrUtil.CaseIgnoreCmp));
-						}
-						else { Debug.Assert(false); }
-					}
-					else { Debug.Assert(false); }
-				}
-				else { Debug.Assert(false); } // Assembly should be loaded
-			}
-#endif
 
 			try
 			{
