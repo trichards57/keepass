@@ -290,7 +290,7 @@ namespace KeePass
 			catch(Exception) { Debug.Assert(MonoWorkarounds.IsRequired(106)); }
 
 #if DEBUG
-			string strInitialWorkDir = WinUtil.GetWorkingDirectory();
+			string strInitialWorkDir = Directory.GetCurrentDirectory();
 #endif
 
 			if(!CommonInit()) { CommonTerminate(); return; }
@@ -594,7 +594,7 @@ namespace KeePass
 			MainCleanUp();
 
 #if DEBUG
-			string strEndWorkDir = WinUtil.GetWorkingDirectory();
+			string strEndWorkDir = Directory.GetCurrentDirectory();
 			Debug.Assert(strEndWorkDir.Equals(strInitialWorkDir, StrUtil.CaseIgnoreCmp));
 #endif
 

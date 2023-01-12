@@ -126,7 +126,7 @@ namespace KeePass.Forms
 
 			string strWorkDir = Program.Config.Application.GetWorkingDirectory(m_strContext);
 			if(string.IsNullOrEmpty(strWorkDir))
-				strWorkDir = WinUtil.GetHomeDirectory();
+				strWorkDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 			BrowseToFolder(strWorkDir);
 
 			EnableControlsEx();

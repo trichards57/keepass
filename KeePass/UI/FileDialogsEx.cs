@@ -338,7 +338,7 @@ namespace KeePass.UI
         {
             MonoWorkarounds.EnsureRecentlyUsedValid();
 
-            string strPrevWorkDir = WinUtil.GetWorkingDirectory();
+            string strPrevWorkDir = Directory.GetCurrentDirectory();
 
             string strNew = Program.Config.Application.GetWorkingDirectory(m_strContext);
             if (!string.IsNullOrEmpty(m_strInitialDirectoryOvr))
@@ -347,7 +347,7 @@ namespace KeePass.UI
 
             try
             {
-                string strWD = WinUtil.GetWorkingDirectory();
+                string strWD = Directory.GetCurrentDirectory();
                 this.FileDialog.InitialDirectory = strWD;
             }
             catch (Exception) { Debug.Assert(false); }

@@ -5175,7 +5175,7 @@ namespace KeePass.Forms
 
             if (ioc.IsLocalFile()) // Expand relative path to absolute
                 ioc.Path = UrlUtil.MakeAbsolutePath(UrlUtil.EnsureTerminatingSeparator(
-                    WinUtil.GetWorkingDirectory(), false) + "Sentinel", ioc.Path);
+                    Directory.GetCurrentDirectory(), false) + "Sentinel", ioc.Path);
 
             // Set the user name, which acts as a filter for the MRU items
             string strUserName = args[AppDefs.CommandLineOptions.IoCredUserName];

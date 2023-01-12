@@ -171,7 +171,7 @@ namespace KeePass.App.Configuration
 				if(!string.IsNullOrEmpty(strLocalOvr))
 				{
 					string strWD = UrlUtil.EnsureTerminatingSeparator(
-						WinUtil.GetWorkingDirectory(), false);
+                        Directory.GetCurrentDirectory(), false);
 					g_strUserConfigFile = UrlUtil.MakeAbsolutePath(strWD +
 						"Sentinel.txt", strLocalOvr);
 					// Do not change g_strAppDataDir, as it's returned from
