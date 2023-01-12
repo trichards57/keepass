@@ -414,8 +414,7 @@ namespace KeePass.Forms
 			}
 			catch(Exception) { Debug.Assert(false); }
 
-			string strSearchTr = ((WinUtil.IsAtLeastWindowsVista ?
-				string.Empty : " ") + KPRes.Search);
+			string strSearchTr = KPRes.Search;
 			UIUtil.SetCueBanner(m_tbQuickFind, strSearchTr);
 
 #if DEBUG

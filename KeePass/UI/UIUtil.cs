@@ -112,8 +112,7 @@ namespace KeePass.UI
 			if(tsr == null) { Debug.Assert(false); tsr = new ToolStripProfessionalRenderer(); }
 			ToolStripManager.Renderer = tsr;
 
-			g_bVistaStyleLists = (WinUtil.IsAtLeastWindowsVista &&
-				(Environment.Version.Major >= 2));
+			g_bVistaStyleLists = Environment.Version.Major >= 2;
 
 			AccessibilityEx.OnSystemSettingChange();
 		}
@@ -3090,7 +3089,7 @@ namespace KeePass.UI
 			}
 			catch(Exception) { Debug.Assert(false); }
 
-			Debug.Assert(!WinUtil.IsAtLeastWindowsVista);
+			Debug.Assert(false);
 			// Do not play a standard sound here
 			return false;
 		}

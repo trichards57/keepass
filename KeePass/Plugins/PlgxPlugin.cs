@@ -207,7 +207,7 @@ namespace KeePass.Plugins
 				}
 				else if(kvp.Key == PlgxPrereqOS)
 				{
-					string strOS = "," + WinUtil.GetOSStr() + ",";
+					string strOS = "," + "Windows" + ",";
 					string strReq = "," + StrUtil.Utf8.GetString(kvp.Value) + ",";
 					if(strReq.IndexOf(strOS, StrUtil.CaseIgnoreCmp) < 0)
 						throw new PlgxException(KPRes.PluginOperatingSystemUnsupported);
@@ -629,10 +629,6 @@ namespace KeePass.Plugins
 				Dictionary<string, string> dictOpt = new Dictionary<string, string>();
 				if(!string.IsNullOrEmpty(strCompilerVersion))
 					dictOpt.Add("CompilerVersion", strCompilerVersion);
-
-				// Windows 98 only supports the parameterless constructor;
-				// check must be separate from the instantiation method
-				if(WinUtil.IsWindows9x) dictOpt.Clear();
 
 				CodeDomProvider cdp = null;
 				if(plgx.ProjectType == PlgxProjectType.CSharp)

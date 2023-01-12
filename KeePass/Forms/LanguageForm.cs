@@ -100,11 +100,12 @@ namespace KeePass.Forms
 
 			UIUtil.SetExplorerTheme(m_lvLanguages, true);
 
-			List<Image> lImg = new List<Image>();
-			lImg.Add(Properties.Resources.B16x16_Browser);
+            List<Image> lImg = new List<Image>
+            {
+                Properties.Resources.B16x16_Browser
+            };
 
-			m_ilIcons = UIUtil.BuildImageListUnscaled(lImg,
-				DpiUtil.ScaleIntX(16), DpiUtil.ScaleIntY(16));
+            m_ilIcons = UIUtil.BuildImageListUnscaled(lImg, DpiUtil.ScaleIntX(16), DpiUtil.ScaleIntY(16));
 			m_lvLanguages.SmallImageList = m_ilIcons;
 
 			m_lvLanguages.Columns.Add(KPRes.InstalledLanguages);
@@ -124,20 +125,19 @@ namespace KeePass.Forms
 			string strDirASep = UrlUtil.EnsureTerminatingSeparator(strDirA, false);
 			string strDirU = AceApplication.GetLanguagesDir(AceDir.User, false);
 
-			List<KeyValuePair<string, KPTranslation>> lTrls =
-				new List<KeyValuePair<string, KPTranslation>>();
-			lTrls.Add(new KeyValuePair<string, KPTranslation>(string.Empty, trlEng));
-			AddTranslations(strDirA, lTrls);
-			if(WinUtil.IsAppX) AddTranslations(strDirU, lTrls);
+            var lTrls = new List<KeyValuePair<string, KPTranslation>>
+            {
+                new KeyValuePair<string, KPTranslation>(string.Empty, trlEng)
+            };
+            AddTranslations(strDirA, lTrls);
 			lTrls.Sort(LanguageForm.CompareTrlItems);
 
 			foreach(KeyValuePair<string, KPTranslation> kvp in lTrls)
 			{
 				KPTranslationProperties p = kvp.Value.Properties;
-				string strName = p.NameEnglish + " (" + p.NameNative + ")";
+				string strName = $"{p.NameEnglish} ({p.NameNative})";
 				string strVer = PwDefs.GetTranslationDisplayVersion(p.ApplicationVersion);
-				bool bBuiltIn = ((kvp.Key.Length == 0) || (WinUtil.IsAppX &&
-					kvp.Key.StartsWith(strDirASep, StrUtil.CaseIgnoreCmp)));
+				bool bBuiltIn = kvp.Key.Length == 0;
 
 				ListViewItem lvi = m_lvLanguages.Items.Add(strName, 0);
 				lvi.SubItems.Add(strVer);
@@ -288,18 +288,8 @@ namespace KeePass.Forms
 		{
 			try
 			{
-				AceDir d = (WinUtil.IsAppX ? AceDir.User : AceDir.App);
-
-				// try
-				// {
-				//	string strU = AceApplication.GetLanguagesDir(AceDir.User, false);
-				//	List<string> l = UrlUtil.GetFilePaths(strU, "*." +
-				//		KPTranslation.FileExtension, SearchOption.TopDirectoryOnly);
-				//	if(l.Count > 0) d = AceDir.User;
-				// }
-				// catch(Exception) { }
-
-				string str = AceApplication.GetLanguagesDir(d, false);
+				var d =  AceDir.App;
+				var str = AceApplication.GetLanguagesDir(d, false);
 				if(!Directory.Exists(str)) Directory.CreateDirectory(str);
 
 				WinUtil.OpenUrlDirectly(str);

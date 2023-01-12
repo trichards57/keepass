@@ -103,7 +103,7 @@ namespace KeePass.Forms
 			m_pbTotal.Value = 0;
 
 			try { if(m_bMarquee) m_pbTotal.Style = ProgressBarStyle.Marquee; }
-			catch(Exception) { Debug.Assert(WinUtil.IsWindows9x || WinUtil.IsWindows2000); }
+			catch(Exception) { Debug.Assert(false); }
 
 			if(!string.IsNullOrEmpty(m_strTitle)) this.Text = m_strTitle;
 			else this.Text = PwDefs.ShortProductName;

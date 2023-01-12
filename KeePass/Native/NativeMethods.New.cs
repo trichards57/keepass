@@ -374,7 +374,7 @@ namespace KeePass.Native
             }
             catch (Exception)
             {
-                Debug.Assert(WinUtil.IsWindows9x);
+                Debug.Assert(false);
             }
 
             return null;

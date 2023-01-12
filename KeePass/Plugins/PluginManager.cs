@@ -219,22 +219,11 @@ namespace KeePass.Plugins
             LoadAllPlugins(strAppDir, SearchOption.TopDirectoryOnly, vExclNames);
             g_strUserDir = strAppDir; // Preliminary, see below
 
-            if (WinUtil.IsAppX)
-            {
-                string str = UrlUtil.EnsureTerminatingSeparator(
-                    AppConfigSerializer.AppDataDirectory, false) + AppDefs.PluginsDir;
-                LoadAllPlugins(str, SearchOption.AllDirectories, vExclNames);
+            string str = UrlUtil.EnsureTerminatingSeparator(strAppDir,
+                false) + AppDefs.PluginsDir;
+            LoadAllPlugins(str, SearchOption.AllDirectories, vExclNames);
 
-                g_strUserDir = str;
-            }
-            else
-            {
-                string str = UrlUtil.EnsureTerminatingSeparator(strAppDir,
-                    false) + AppDefs.PluginsDir;
-                LoadAllPlugins(str, SearchOption.AllDirectories, vExclNames);
-
-                g_strUserDir = str;
-            }
+            g_strUserDir = str;
         }
 
         private static void CheckCompatibility(string strHash, Plugin p)

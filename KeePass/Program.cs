@@ -617,9 +617,6 @@ namespace KeePass
 			InitAppContext();
 			MonoWorkarounds.Initialize();
 
-			// Do not run as AppX, because of compatibility problems
-			if(WinUtil.IsAppX) return false;
-
 			try { SelfTest.TestFipsComplianceProblems(); }
 			catch(Exception exFips)
 			{
@@ -730,7 +727,7 @@ namespace KeePass
 					Debug.Assert(false);
 				}
 			}
-			catch(Exception) { Debug.Assert(!WinUtil.IsAtLeastWindowsVista); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		private static void InitAppContext()

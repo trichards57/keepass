@@ -505,15 +505,6 @@ namespace KeePass.Util
 			if(uc == null) { Debug.Assert(false); return false; }
 			if(lAvail == null) return false; // No assert
 
-			if((uc.Name == CompMain) && WinUtil.IsAppX)
-			{
-				// The user's AppX may be old; do not claim it's up-to-date
-				// uc.VerAvailable = uc.VerInstalled;
-				// uc.Status = UpdateComponentStatus.UpToDate;
-				uc.Status = UpdateComponentStatus.Unknown;
-				return true;
-			}
-
 			foreach(UpdateComponentInfo ucAvail in lAvail)
 			{
 				if(ucAvail.Name.Equals(uc.Name, StrUtil.CaseIgnoreCmp))

@@ -972,15 +972,8 @@ namespace KeePass.Forms
             m_numLockAfterTime.Enabled = (m_cbLockAfterTime.Checked &&
                 m_cbLockAfterTime.Enabled);
 
-            if (WinUtil.IsWindows9x )
-            {
-                m_cbLockAfterGlobalTime.Checked = false;
-                m_cbLockAfterGlobalTime.Enabled = false;
-                m_numLockAfterGlobalTime.Enabled = false;
-            }
-            else
-                m_numLockAfterGlobalTime.Enabled = (m_cbLockAfterGlobalTime.Checked &&
-                    m_cbLockAfterGlobalTime.Enabled);
+            m_numLockAfterGlobalTime.Enabled = (m_cbLockAfterGlobalTime.Checked &&
+                m_cbLockAfterGlobalTime.Enabled);
 
             m_numDefaultExpireDays.Enabled = (m_cbDefaultExpireDays.Checked &&
                 m_cbDefaultExpireDays.Enabled);

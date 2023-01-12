@@ -483,8 +483,7 @@ namespace KeePass.Forms
             UIUtil.ConfigureTbButton(m_tbAlignRight, KPRes.AlignRight, KPRes.AlignRight +
                 " (" + UIUtil.GetKeysName(Keys.Control | Keys.R) + ")", null);
 
-            string strSearchTr = ((WinUtil.IsAtLeastWindowsVista ?
-                string.Empty : " ") + KPRes.Search);
+            string strSearchTr = KPRes.Search;
             UIUtil.SetCueBanner(m_tbFind, strSearchTr);
 
             UIUtil.SetToolTip(m_tbFontCombo, KPRes.Font, true);

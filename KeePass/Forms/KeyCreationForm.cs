@@ -184,8 +184,7 @@ namespace KeePass.Forms
 			if(!m_cbKeyFile.Enabled && !m_cbKeyFile.Checked)
 				UIUtil.SetEnabledFast(false, m_lblKeyFileInfo, m_lblKeyFileWarning);
 
-			if(WinUtil.IsWindows9x ||
-				(!m_cbUserAccount.Enabled && !m_cbUserAccount.Checked))
+			if((!m_cbUserAccount.Enabled && !m_cbUserAccount.Checked))
 			{
 				UIUtil.SetChecked(m_cbUserAccount, false);
 				UIUtil.SetEnabledFast(false, m_cbUserAccount, m_lblWindowsAccDesc,

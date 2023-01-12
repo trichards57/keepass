@@ -54,7 +54,7 @@ namespace KeePass.UI
 			// Enable default double buffering (must be combined with
 			// TVS_EX_DOUBLEBUFFER, see OnHandleCreated)
 			try { this.DoubleBuffered = true; }
-			catch(Exception) { Debug.Assert(!WinUtil.IsAtLeastWindowsVista); }
+			catch(Exception) { Debug.Assert(false); }
 
 			// try
 			// {
@@ -161,7 +161,7 @@ namespace KeePass.UI
 					NativeMethods.SendMessage(this.Handle,
 						NativeMethods.TVM_SETEXTENDEDSTYLE, p, p);
 				}
-				else { Debug.Assert(!WinUtil.IsAtLeastWindowsVista); }
+				else { Debug.Assert(false); }
 			}
 			catch(Exception) { Debug.Assert(false); }
 

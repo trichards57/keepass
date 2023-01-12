@@ -303,7 +303,7 @@ namespace KeePass.Util.SendInputExt
 
 			pInput[0].Type = NativeMethods.INPUT_KEYBOARD;
 
-			if(optUnicodeChar.HasValue && WinUtil.IsAtLeastWindows2000)
+			if(optUnicodeChar.HasValue)
 			{
 				pInput[0].KeyboardInput.VirtualKeyCode = 0;
 				pInput[0].KeyboardInput.ScanCode = (ushort)optUnicodeChar.Value;
@@ -344,7 +344,7 @@ namespace KeePass.Util.SendInputExt
 
 			pInput[0].Type = NativeMethods.INPUT_KEYBOARD;
 
-			if(optUnicodeChar.HasValue && WinUtil.IsAtLeastWindows2000)
+			if(optUnicodeChar.HasValue)
 			{
 				pInput[0].VirtualKeyCode = 0;
 				pInput[0].ScanCode = (ushort)optUnicodeChar.Value;

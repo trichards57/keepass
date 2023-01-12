@@ -118,29 +118,13 @@ namespace KeePass.UI
 		{
 			Debug.Assert(!m_bInitialized); // Configure process before use
 
-			// try
-			// {
-			//	ConfigurationManager.AppSettings.Set(
-			//		"EnableWindowsFormsHighDpiAutoResizing", "true");
-			// }
-			// catch(Exception) { Debug.Assert(false); }
-
 			try
 			{
-				// SetProcessDPIAware is obsolete; use
-				// SetProcessDpiAwareness on Windows 10 and higher
-				if(WinUtil.IsAtLeastWindows10) // 8.1 partially
-				{
 					if(NativeMethods.SetProcessDpiAwareness(
 						NativeMethods.ProcessDpiAwareness.SystemAware) < 0)
 					{
 						Debug.Assert(false);
 					}
-				}
-				else if(WinUtil.IsAtLeastWindowsVista)
-				{
-					if(!NativeMethods.SetProcessDPIAware()) { Debug.Assert(false); }
-				}
 			}
 			catch(Exception) { Debug.Assert(false); }
 		}

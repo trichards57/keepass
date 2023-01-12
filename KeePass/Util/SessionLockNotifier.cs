@@ -75,7 +75,7 @@ namespace KeePass.Util
 				SystemEvents.SessionSwitch += this.OnSessionSwitch;
 				SystemEvents.PowerModeChanged += this.OnPowerModeChanged;
 			}
-			catch(Exception) { Debug.Assert(WinUtil.IsWindows2000); } // 2000 always throws
+			catch(Exception) { Debug.Assert(false); } // 2000 always throws
 
 			m_evHandler = ev;
 			m_bEventsRegistered = true;
@@ -93,7 +93,7 @@ namespace KeePass.Util
 					SystemEvents.SessionSwitch -= this.OnSessionSwitch;
 					SystemEvents.PowerModeChanged -= this.OnPowerModeChanged;
 				}
-				catch(Exception) { Debug.Assert(WinUtil.IsWindows2000); } // 2000 always throws
+				catch(Exception) { Debug.Assert(false); } // 2000 always throws
 
 				m_evHandler = null;
 				m_bEventsRegistered = false;

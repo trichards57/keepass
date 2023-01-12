@@ -40,119 +40,10 @@ namespace KeePass.Util
 {
     public static class WinUtil
     {
-        private static readonly string[] m_vIE7Windows = new string[] {
-            "Windows Internet Explorer", "Maxthon"
-        };
-
         private static string g_strAsmVersion = null;
-        private static bool m_bIsAppX = false;
-        private static bool m_bIsAtLeastWindows10 = false;
-        private static bool m_bIsAtLeastWindows2000 = false;
-        private static bool m_bIsAtLeastWindows7 = false;
-        private static bool m_bIsAtLeastWindows8 = false;
-        private static bool m_bIsAtLeastWindowsVista = false;
-        private static bool m_bIsWindows2000 = false;
-        private static bool m_bIsWindows9x = false;
-        private static bool m_bIsWindowsXP = false;
         private static string m_strExePath = null;
-
         private static ulong m_uFrameworkVersion = 0;
-
-        static WinUtil()
-        {
-            OperatingSystem os = Environment.OSVersion;
-            Version v = os.Version;
-
-            m_bIsWindows9x = (os.Platform == PlatformID.Win32Windows);
-            m_bIsWindows2000 = ((v.Major == 5) && (v.Minor == 0));
-            m_bIsWindowsXP = ((v.Major == 5) && (v.Minor == 1));
-
-            m_bIsAtLeastWindows2000 = (v.Major >= 5);
-            m_bIsAtLeastWindowsVista = (v.Major >= 6);
-            m_bIsAtLeastWindows7 = ((v.Major >= 7) || ((v.Major == 6) && (v.Minor >= 1)));
-            m_bIsAtLeastWindows8 = ((v.Major >= 7) || ((v.Major == 6) && (v.Minor >= 2)));
-
-            // Environment.OSVersion is reliable only up to version 6.2;
-            // https://msdn.microsoft.com/library/windows/desktop/ms724832.aspx
-            RegistryKey rk = null;
-            try
-            {
-                rk = Registry.LocalMachine.OpenSubKey(
-                    "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", false);
-                if (rk != null)
-                {
-                    string str = rk.GetValue("CurrentMajorVersionNumber",
-                        string.Empty).ToString();
-                    uint u;
-                    if (uint.TryParse(str, out u))
-                        m_bIsAtLeastWindows10 = (u >= 10);
-                    else { Debug.Assert(string.IsNullOrEmpty(str)); }
-                }
-                else { Debug.Assert(false); }
-            }
-            catch (Exception) { Debug.Assert(false); }
-            finally { if (rk != null) rk.Close(); }
-
-            try
-            {
-                string strDir = UrlUtil.GetFileDirectory(GetExecutable(), false, false);
-                if (strDir.IndexOf("\\WindowsApps\\", StrUtil.CaseIgnoreCmp) >= 0)
-                {
-                    Regex rx = new Regex("\\\\WindowsApps\\\\.*?_\\d+(\\.\\d+)*_",
-                        RegexOptions.IgnoreCase);
-                    m_bIsAppX = rx.IsMatch(strDir);
-                }
-                else { Debug.Assert(!m_bIsAppX); } // No AppX by default
-            }
-            catch (Exception) { Debug.Assert(false); }
-        }
-
         public static event EventHandler<OpenUrlEventArgs> OpenUrlPre;
-
-        public static bool IsAppX
-        {
-            get { return m_bIsAppX; }
-        }
-
-        public static bool IsAtLeastWindows10
-        {
-            get { return m_bIsAtLeastWindows10; }
-        }
-
-        public static bool IsAtLeastWindows2000
-        {
-            get { return m_bIsAtLeastWindows2000; }
-        }
-
-        public static bool IsAtLeastWindows7
-        {
-            get { return m_bIsAtLeastWindows7; }
-        }
-
-        public static bool IsAtLeastWindows8
-        {
-            get { return m_bIsAtLeastWindows8; }
-        }
-
-        public static bool IsAtLeastWindowsVista
-        {
-            get { return m_bIsAtLeastWindowsVista; }
-        }
-
-        public static bool IsWindows2000
-        {
-            get { return m_bIsWindows2000; }
-        }
-
-        public static bool IsWindows9x
-        {
-            get { return m_bIsWindows9x; }
-        }
-
-        public static bool IsWindowsXP
-        {
-            get { return m_bIsWindowsXP; }
-        }
 
         /// <summary>
         /// Shorten a path.
@@ -162,9 +53,7 @@ namespace KeePass.Util
         /// <returns>Shortened path.</returns>
         public static string CompactPath(string strPath, int cchMax)
         {
-            Debug.Assert(strPath != null);
             if (strPath == null) throw new ArgumentNullException("strPath");
-            Debug.Assert(cchMax >= 0);
             if (cchMax < 0) throw new ArgumentOutOfRangeException("cchMax");
 
             if (strPath.Length <= cchMax) return strPath;
@@ -172,7 +61,7 @@ namespace KeePass.Util
 
             try
             {
-                StringBuilder sb = new StringBuilder(strPath.Length + 2);
+                var sb = new StringBuilder(strPath.Length + 2);
 
                 if (NativeMethods.PathCompactPathEx(sb, strPath, (uint)cchMax + 1, 0))
                 {
@@ -188,20 +77,20 @@ namespace KeePass.Util
 
         public static bool FlushStorageBuffers(char chDriveLetter, bool bOnlyIfRemovable)
         {
-            string strDriveLetter = new string(chDriveLetter, 1);
-            bool bResult = true;
+            var strDriveLetter = new string(chDriveLetter, 1);
+            var bResult = true;
 
             try
             {
                 if (bOnlyIfRemovable)
                 {
-                    DriveInfo di = new DriveInfo(strDriveLetter);
+                    var di = new DriveInfo(strDriveLetter);
                     if (di.DriveType != DriveType.Removable) return true;
                 }
 
-                string strDevice = "\\\\.\\" + strDriveLetter + ":";
+                var strDevice = "\\\\.\\" + strDriveLetter + ":";
 
-                IntPtr hDevice = NativeMethods.CreateFile(strDevice,
+                var hDevice = NativeMethods.CreateFile(strDevice,
                     NativeMethods.EFileAccess.GenericRead | NativeMethods.EFileAccess.GenericWrite,
                     NativeMethods.EFileShare.Read | NativeMethods.EFileShare.Write,
                     IntPtr.Zero, NativeMethods.ECreationDisposition.OpenExisting,
@@ -212,11 +101,10 @@ namespace KeePass.Util
                     return false;
                 }
 
-                string strDir = FreeDriveIfCurrent(chDriveLetter);
+                var strDir = FreeDriveIfCurrent(chDriveLetter);
 
-                uint dwDummy;
                 if (NativeMethods.DeviceIoControl(hDevice, NativeMethods.FSCTL_LOCK_VOLUME,
-                    IntPtr.Zero, 0, IntPtr.Zero, 0, out dwDummy, IntPtr.Zero))
+                    IntPtr.Zero, 0, IntPtr.Zero, 0, out var dwDummy, IntPtr.Zero))
                 {
                     if (!NativeMethods.DeviceIoControl(hDevice, NativeMethods.FSCTL_UNLOCK_VOLUME,
                         IntPtr.Zero, 0, IntPtr.Zero, 0, out dwDummy, IntPtr.Zero))
@@ -226,7 +114,7 @@ namespace KeePass.Util
                 }
                 else bResult = false;
 
-                if (strDir.Length > 0) WinUtil.SetWorkingDirectory(strDir);
+                if (strDir.Length > 0) SetWorkingDirectory(strDir);
 
                 if (!NativeMethods.CloseHandle(hDevice)) { Debug.Assert(false); }
             }
@@ -305,7 +193,7 @@ namespace KeePass.Util
 
         public static ulong GetMaxNetFrameworkVersion()
         {
-            ulong u = m_uFrameworkVersion;
+            var u = m_uFrameworkVersion;
             if (u != 0) return u;
 
             // https://www.mono-project.com/docs/about-mono/releases/
@@ -339,11 +227,6 @@ namespace KeePass.Util
 
             m_uFrameworkVersion = u;
             return u;
-        }
-
-        public static string GetOSStr()
-        {
-            return "Windows";
         }
 
         public static string GetWorkingDirectory()
@@ -390,19 +273,6 @@ namespace KeePass.Util
 
             if (strLower.StartsWith("cmd://")) return true;
             if (strLower.StartsWith("\\\\")) return true; // UNC path support
-
-            return false;
-        }
-
-        public static bool IsInternetExplorer7Window(string strWindowTitle)
-        {
-            if (strWindowTitle == null) return false; // No assert or throw
-            if (strWindowTitle.Length == 0) return false; // No assert or throw
-
-            foreach (string str in m_vIE7Windows)
-            {
-                if (strWindowTitle.IndexOf(str) >= 0) return true;
-            }
 
             return false;
         }
@@ -525,12 +395,6 @@ namespace KeePass.Util
             catch (Exception ex) { MessageService.ShowWarning(ex); }
         }
 
-        [Obsolete]
-        public static string RunConsoleApp(string strAppPath, string strParams)
-        {
-            return NativeLib.RunConsoleApp(strAppPath, strParams);
-        }
-
         public static bool RunElevated(string strExe, string strArgs,
             bool bShowMessageIfFailed)
         {
@@ -538,13 +402,14 @@ namespace KeePass.Util
 
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo();
-                psi.FileName = strExe;
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = strExe
+                };
                 if (!string.IsNullOrEmpty(strArgs)) psi.Arguments = strArgs;
                 psi.UseShellExecute = true;
 
-                // Elevate on Windows Vista and higher
-                if (WinUtil.IsAtLeastWindowsVista) psi.Verb = "runas";
+                psi.Verb = "runas";
 
                 NativeLib.StartProcess(psi);
             }
@@ -585,26 +450,27 @@ namespace KeePass.Util
             string strUrlFlt = strUrlToOpen;
             strUrlFlt = strUrlFlt.TrimStart(new char[] { ' ', '\t', '\r', '\n' });
 
-            bool bEncCmd = (obForceEncCmd.HasValue ? obForceEncCmd.Value :
-                WinUtil.IsCommandLineUrl(strUrlFlt));
+            bool bEncCmd = obForceEncCmd ?? IsCommandLineUrl(strUrlFlt);
 
-            SprContext ctx = new SprContext(pe, pd, SprCompileFlags.All, false, bEncCmd);
-            ctx.Base = strBaseRaw;
-            ctx.BaseIsEncoded = false;
+            SprContext ctx = new SprContext(pe, pd, SprCompileFlags.All, false, bEncCmd)
+            {
+                Base = strBaseRaw,
+                BaseIsEncoded = false
+            };
 
             string strUrl = SprEngine.Compile(strUrlFlt, ctx);
 
-            string strOvr = Program.Config.Integration.UrlSchemeOverrides.GetOverrideForUrl(
-                strUrl);
+            string strOvr = Program.Config.Integration.UrlSchemeOverrides.GetOverrideForUrl(strUrl);
             if (!bAllowOverride) strOvr = null;
             if (strOvr != null)
             {
                 bool bEncCmdOvr = WinUtil.IsCommandLineUrl(strOvr);
 
-                SprContext ctxOvr = new SprContext(pe, pd, SprCompileFlags.All,
-                    false, bEncCmdOvr);
-                ctxOvr.Base = strUrl;
-                ctxOvr.BaseIsEncoded = bEncCmd;
+                var ctxOvr = new SprContext(pe, pd, SprCompileFlags.All, false, bEncCmdOvr)
+                {
+                    Base = strUrl,
+                    BaseIsEncoded = bEncCmd
+                };
 
                 strUrl = SprEngine.Compile(strOvr, ctxOvr);
             }
@@ -710,7 +576,7 @@ namespace KeePass.Util
 
                         RegistryKey kPro = kVer.OpenSubKey(strProfile, false);
                         UpdateNetVersionFromRegKey(kPro, ref uMaxVer);
-                        if (kPro != null) kPro.Close();
+                        kPro?.Close();
                     }
 
                     kVer.Close();
@@ -722,8 +588,7 @@ namespace KeePass.Util
             return uMaxVer;
         }
 
-        private static void OpenUrlPriv(string strUrlToOpen, PwEntry peDataSource,
-                                                                                                            bool bAllowOverride, string strBaseRaw)
+        private static void OpenUrlPriv(string strUrlToOpen, PwEntry peDataSource, bool bAllowOverride, string strBaseRaw)
         {
             if (string.IsNullOrEmpty(strUrlToOpen)) { Debug.Assert(false); return; }
 
@@ -749,17 +614,17 @@ namespace KeePass.Util
             if (string.IsNullOrEmpty(strUrl)) { } // Might be placeholder only
             else if (WinUtil.IsCommandLineUrl(strUrl))
             {
-                string strApp, strArgs;
-                StrUtil.SplitCommandLine(WinUtil.GetCommandLineFromUrl(strUrl),
-                    out strApp, out strArgs);
+                StrUtil.SplitCommandLine(WinUtil.GetCommandLineFromUrl(strUrl), out var strApp, out var strArgs);
 
                 try
                 {
                     try { NativeLib.StartProcess(strApp, strArgs); }
                     catch (Win32Exception)
                     {
-                        ProcessStartInfo psi = new ProcessStartInfo();
-                        psi.FileName = strApp;
+                        ProcessStartInfo psi = new ProcessStartInfo
+                        {
+                            FileName = strApp
+                        };
                         if (!string.IsNullOrEmpty(strArgs)) psi.Arguments = strArgs;
                         psi.UseShellExecute = false;
 
@@ -788,7 +653,7 @@ namespace KeePass.Util
             // Restore previous working directory
             WinUtil.SetWorkingDirectory(strPrevWorkDir);
 
-            if (peDataSource != null) peDataSource.Touch(false);
+            peDataSource?.Touch(false);
 
             // SprEngine.Compile might have modified the database
             MainForm mf = Program.MainForm;
@@ -818,63 +683,25 @@ namespace KeePass.Util
             }
             catch (Exception) { Debug.Assert(false); }
         }
-
-        /* private static ulong GetMaxNetVersionPriv()
-		{
-			string strSysRoot = Environment.GetEnvironmentVariable("SystemRoot");
-			string strFrameworks = UrlUtil.EnsureTerminatingSeparator(strSysRoot,
-				false) + "Microsoft.NET" + Path.DirectorySeparatorChar + "Framework";
-			if(!Directory.Exists(strFrameworks)) { Debug.Assert(false); return 0; }
-
-			ulong uFrameworkVersion = 0;
-			DirectoryInfo diFrameworks = new DirectoryInfo(strFrameworks);
-			foreach(DirectoryInfo di in diFrameworks.GetDirectories("v*",
-				SearchOption.TopDirectoryOnly))
-			{
-				string strVer = di.Name.TrimStart('v', 'V');
-				ulong uVer = StrUtil.ParseVersion(strVer);
-				if(uVer > uFrameworkVersion) uFrameworkVersion = uVer;
-			}
-
-			return uFrameworkVersion;
-		} */
     }
 
     public sealed class OpenUrlEventArgs : EventArgs
     {
-        private readonly bool m_bAllowOverride;
-        private readonly PwEntry m_pe;
-        private readonly string m_strBaseRaw;
-        private string m_strUrl;
-
         public OpenUrlEventArgs(string strUrlToOpen, PwEntry peDataSource,
             bool bAllowOverride, string strBaseRaw)
         {
-            m_strUrl = strUrlToOpen;
-            m_pe = peDataSource;
-            m_bAllowOverride = bAllowOverride;
-            m_strBaseRaw = strBaseRaw;
+            Url = strUrlToOpen;
+            Entry = peDataSource;
+            AllowOverride = bAllowOverride;
+            BaseRaw = strBaseRaw;
         }
 
-        public bool AllowOverride
-        {
-            get { return m_bAllowOverride; }
-        }
+        public bool AllowOverride { get; }
 
-        public string BaseRaw
-        {
-            get { return m_strBaseRaw; }
-        }
+        public string BaseRaw { get; }
 
-        public PwEntry Entry
-        {
-            get { return m_pe; }
-        }
+        public PwEntry Entry { get; }
 
-        public string Url
-        {
-            get { return m_strUrl; }
-            set { m_strUrl = value; }
-        }
+        public string Url { get; set; }
     }
 }

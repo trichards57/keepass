@@ -68,12 +68,9 @@ namespace KeePass.UI
 			public SecureThreadState State = SecureThreadState.None;
 		}
 
-		internal static bool IsSupported
-		{
-			get { return (WinUtil.IsAtLeastWindows2000); }
-		}
+        internal static bool IsSupported => true;
 
-		public ProtectedDialog(UIFormConstructor fnConstruct,
+        public ProtectedDialog(UIFormConstructor fnConstruct,
 			UIFormResultBuilder fnResultBuilder)
 		{
 			if(fnConstruct == null) { Debug.Assert(false); throw new ArgumentNullException("fnConstruct"); }
@@ -261,7 +258,7 @@ namespace KeePass.UI
 					if((uif & (ulong)AceUIFlags.SecureDesktopIme) == 0)
 						NativeMethods.ImmDisableIME(0); // Always false on 2000/XP
 				}
-				catch(Exception) { Debug.Assert(!WinUtil.IsAtLeastWindows2000); }
+				catch(Exception) { Debug.Assert(false); }
 
 				ProcessMessagesEx();
 

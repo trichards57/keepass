@@ -46,7 +46,6 @@ namespace KeePass.Util
 			m_hWnd = hWnd;
 
 			if(g_sdbPrimary != null) return; // We're not the first
-			if(!WinUtil.IsAtLeastWindowsVista) return;
 
 			string str = strReason;
 			if(string.IsNullOrEmpty(str)) { Debug.Assert(false); str = "..."; }

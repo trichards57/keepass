@@ -56,13 +56,7 @@ namespace KeePass.UI.ToolStripRendering
 
 			// https://sourceforge.net/p/keepass/discussion/329220/thread/fab85f1d/
 			// https://keepass.info/help/kb/tsrstyles_survey.html
-			TsrFactory[] vPref;
-			if(WinUtil.IsAtLeastWindows10)
-				vPref = new TsrFactory[] { f10, f81, fKP, fP, fS };
-			else if(WinUtil.IsAtLeastWindows8)
-				vPref = new TsrFactory[] { f81, f10, fKP, fP, fS };
-			else // Older Windows systems
-				vPref = new TsrFactory[] { fKP, f10, f81, fP, fS };
+			var vPref = new TsrFactory[] { f10, f81, fKP, fP, fS };
 
 			List<TsrFactory> l = new List<TsrFactory>(vPref);
 

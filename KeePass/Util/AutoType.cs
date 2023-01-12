@@ -240,13 +240,6 @@ namespace KeePass.Util
 
 			AutoTypeCtx ctxNew = ctx.Clone();
 
-			if(Program.Config.Integration.AutoTypePrependInitSequenceForIE &&
-				WinUtil.IsInternetExplorer7Window(strWindow))
-			{
-				ctxNew.Sequence = @"{DELAY 50}1{DELAY 50}{BACKSPACE}" +
-					ctxNew.Sequence;
-			}
-
 			return AutoType.Execute(ctxNew);
 		}
 

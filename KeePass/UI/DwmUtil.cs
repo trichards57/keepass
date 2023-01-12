@@ -88,19 +88,10 @@ namespace KeePass.UI
 		{
 			try
 			{
-				// Static iconic bitmaps only supported by Windows >= 7
-				if(!WinUtil.IsAtLeastWindows7) return;
-
 				IntPtr h = f.Handle;
 				if(h == IntPtr.Zero) { Debug.Assert(false); return; }
 
 				int s = (bEnable ? 0 : 1);
-
-				// DwmSetWindowAttributeInt(h, DWMWA_DISALLOW_PEEK, ref iNoPeek, 4);
-
-				// int iFlip3D = (bEnable ? DWMFLIP3D_DEFAULT :
-				//	DWMFLIP3D_EXCLUDEBELOW);
-				// DwmSetWindowAttributeInt(h, DWMWA_FLIP3D_POLICY, ref iFlip3D, 4);
 
 				DwmSetWindowAttributeInt(h, DWMWA_HAS_ICONIC_BITMAP, ref s, 4);
 				DwmSetWindowAttributeInt(h, DWMWA_FORCE_ICONIC_REPRESENTATION, ref s, 4);
@@ -211,7 +202,7 @@ namespace KeePass.UI
 					DwmSetIconicLivePreviewBitmap(hWnd, hBmp, IntPtr.Zero,
 						DWM_SIT_DISPLAYFRAME);
 			}
-			catch(Exception) { Debug.Assert(!WinUtil.IsAtLeastWindows7); }
+			catch(Exception) { Debug.Assert(false); }
 			finally
 			{
 				if(hBmp != IntPtr.Zero)
