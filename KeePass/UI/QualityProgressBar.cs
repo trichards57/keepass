@@ -163,7 +163,7 @@ namespace KeePass.UI
 			// Workaround for Windows <= XP
 			Rectangle rectGrad = new Rectangle(rectDraw.X, rectDraw.Y,
 				rectDraw.Width, rectDraw.Height);
-			if(!WinUtil.IsAtLeastWindowsVista && !NativeLib.IsUnix())
+			if(!WinUtil.IsAtLeastWindowsVista)
 				rectGrad.Inflate(1, 0);
 
 			using(LinearGradientBrush brush = new LinearGradientBrush(rectGrad,
@@ -194,16 +194,10 @@ namespace KeePass.UI
 			int dw = rectDraw.Width;
 			int dh = rectDraw.Height;
 
-			if(!NativeLib.IsUnix() || !UIUtil.IsDarkColor(clrFG))
-			{
 				Rectangle rectGlow = rectDraw;
 				rectGlow.Width = TextRenderer.MeasureText(g, m_strText, f).Width;
 				rectGlow.X = ((dw - rectGlow.Width) / 2) + dx;
 
-				// Instead of an ellipse, Mono draws a circle
-				if(NativeLib.IsUnix())
-					rectGlow.Inflate(rectGlow.Width * 2, rectGlow.Height * 2);
-				else
 					rectGlow.Inflate(rectGlow.Width / 2, rectGlow.Height / 2);
 
 				using(GraphicsPath gpGlow = new GraphicsPath())
@@ -223,8 +217,7 @@ namespace KeePass.UI
 						g.Clip = rgOrgClip;
 					}
 				}
-			}
-
+			
 			// With ClearType on, text drawn using Graphics.DrawString
 			// looks better than TextRenderer.DrawText;
 			// https://sourceforge.net/p/keepass/discussion/329220/thread/06ef4466/

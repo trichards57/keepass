@@ -61,8 +61,6 @@ namespace KeePass.UI.ToolStripRendering
 				vPref = new TsrFactory[] { f10, f81, fKP, fP, fS };
 			else if(WinUtil.IsAtLeastWindows8)
 				vPref = new TsrFactory[] { f81, f10, fKP, fP, fS };
-			else if(NativeLib.IsUnix())
-				vPref = new TsrFactory[] { f81, f10, fKP, fP, fS };
 			else // Older Windows systems
 				vPref = new TsrFactory[] { fKP, f10, f81, fP, fS };
 

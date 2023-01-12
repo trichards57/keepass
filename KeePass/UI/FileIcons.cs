@@ -132,7 +132,7 @@ namespace KeePass.UI
 
 			try
 			{
-				if((img == null) && !NativeLib.IsUnix())
+				if((img == null))
 				{
 					string strDisplayName;
 					NativeMethods.SHGetFileInfo(strPath, sz.Width, sz.Height,

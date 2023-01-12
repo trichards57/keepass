@@ -93,7 +93,7 @@ namespace KeePass.UI.ToolStripRendering
 			// is pressed; thus in this case we draw it again using the
 			// correct color
 			ToolStripItem tsi = ((e != null) ? e.Item : null);
-			if((tsi != null) && tsi.Pressed && !NativeLib.IsUnix())
+			if((tsi != null) && tsi.Pressed)
 			{
 				using(Pen p = new Pen(this.ColorTable.ButtonPressedBorder))
 				{

@@ -117,7 +117,7 @@ namespace KeePassLib.Serialization
 			// avoid/workaround .NET bug 621450:
 			// https://connect.microsoft.com/VisualStudio/feedback/details/621450/problem-renaming-file-on-ftp-server-using-ftpwebrequest-in-net-framework-4-0-vs2010-only
 			if(strPath.StartsWith("ftp:", StrUtil.CaseIgnoreCmp) &&
-				(Environment.Version.Major >= 4) && !NativeLib.IsUnix())
+				(Environment.Version.Major >= 4))
 				m_bTransacted = false;
 #endif
 

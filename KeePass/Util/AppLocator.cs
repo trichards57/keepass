@@ -99,7 +99,7 @@ namespace KeePass.Util
 							b = (rk.GetValue("URL Protocol") != null);
 					}
 				}
-				catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+				catch(Exception) { Debug.Assert(false); }
 
 				m_obEdgeProtocol = b;
 				return b;
@@ -116,7 +116,7 @@ namespace KeePass.Util
 				strPath = f();
 				if((strPath != null) && (strPath.Length == 0)) strPath = null;
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); strPath = null; }
+			catch(Exception) { Debug.Assert(false); strPath = null; }
 
 			m_dPaths[a] = strPath;
 			return strPath;

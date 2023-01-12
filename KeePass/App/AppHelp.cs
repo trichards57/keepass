@@ -180,35 +180,6 @@ namespace KeePass.App
 
         private static bool ShowHelpLocalKcv(string strQuotedMsIts)
         {
-            try
-            {
-                if (!NativeLib.IsUnix()) return false;
-
-                string strApp = AppLocator.FindAppUnix("kchmviewer");
-                if (string.IsNullOrEmpty(strApp)) return false;
-
-                string strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "::");
-                if (string.IsNullOrEmpty(strFile))
-                    strFile = StrUtil.GetStringBetween(strQuotedMsIts, 0, ":", "\"");
-                if (string.IsNullOrEmpty(strFile))
-                {
-                    Debug.Assert(false);
-                    return false;
-                }
-
-                string strUrl = StrUtil.GetStringBetween(strQuotedMsIts, 0, "::", "\"");
-
-                // https://www.ulduzsoft.com/linux/kchmviewer/kchmviewer-integration-reference/
-                string strArgs = "\"" + SprEncoding.EncodeForCommandLine(strFile) + "\"";
-                if (!string.IsNullOrEmpty(strUrl))
-                    strArgs = "-showPage \"" + SprEncoding.EncodeForCommandLine(
-                        strUrl) + "\" " + strArgs;
-
-                NativeLib.StartProcess(strApp, strArgs);
-                return true;
-            }
-            catch (Exception) { Debug.Assert(false); }
-
             return false;
         }
 

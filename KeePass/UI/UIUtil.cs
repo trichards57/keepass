@@ -123,8 +123,6 @@ namespace KeePass.UI
 			NativeMethods.CHARFORMAT2 cf = new NativeMethods.CHARFORMAT2();
 			cf.cbSize = (uint)Marshal.SizeOf(typeof(NativeMethods.CHARFORMAT2));
 
-			if(NativeLib.IsUnix()) return cf;
-
 			IntPtr pCF = IntPtr.Zero;
 			try
 			{
@@ -146,8 +144,6 @@ namespace KeePass.UI
 
 		internal static void RtfSetCharFormat(RichTextBox rtb, ref NativeMethods.CHARFORMAT2 cf)
 		{
-			if(NativeLib.IsUnix()) return;
-
 			uint cb = (uint)Marshal.SizeOf(typeof(NativeMethods.CHARFORMAT2));
 			if(cf.cbSize != cb) { Debug.Assert(false); cf.cbSize = cb; }
 
@@ -550,7 +546,7 @@ namespace KeePass.UI
 				NativeMethods.SendMessage(hWnd, NativeMethods.EM_SETCUEBANNER,
 					IntPtr.Zero, p);
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 			finally { if(p != IntPtr.Zero) Marshal.FreeCoTaskMem(p); }
 		}
 
@@ -579,7 +575,7 @@ namespace KeePass.UI
 
 				SetCueBanner(cbi.hwndEdit, strText);
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		public static Bitmap CreateScreenshot()
@@ -653,7 +649,6 @@ namespace KeePass.UI
 			if(tb == null) { Debug.Assert(false); return; }
 			if(str == null) str = string.Empty;
 
-			if(!NativeLib.IsUnix())
 				str = StrUtil.NormalizeNewLines(str, true);
 
 			tb.Text = str;
@@ -1456,7 +1451,6 @@ namespace KeePass.UI
 		private static void ConfigureToolTip(IntPtr hToolTip)
 		{
 			if(hToolTip == IntPtr.Zero) { Debug.Assert(false); return; }
-			if(NativeLib.IsUnix()) return;
 
 			try
 			{
@@ -1479,7 +1473,6 @@ namespace KeePass.UI
 		private static void ConfigureToolTip(Control c, int msgGetToolTip)
 		{
 			if(c == null) { Debug.Assert(false); return; }
-			if(NativeLib.IsUnix()) return;
 
 			try
 			{
@@ -1955,7 +1948,6 @@ namespace KeePass.UI
 		public static bool SetSortIcon(ListView lv, int iColumn, SortOrder so)
 		{
 			if(lv == null) { Debug.Assert(false); return false; }
-			if(NativeLib.IsUnix()) return false;
 
 			try
 			{
@@ -2378,7 +2370,7 @@ namespace KeePass.UI
 			if(lv == null) { Debug.Assert(false); return; }
 			if(s == null) { Debug.Assert(false); return; }
 
-			if(UIUtil.GetGroupsEnabled(lv) && !NativeLib.IsUnix())
+			if(UIUtil.GetGroupsEnabled(lv))
 			{
 				// Only works correctly when groups are present
 				// (lv.ShowGroups is not sufficient)
@@ -2756,7 +2748,7 @@ namespace KeePass.UI
 					// can show a Caps Lock balloon tip;
 					// https://sourceforge.net/p/keepass/feature-requests/1905/
 					TextBox tb = (c as TextBox);
-					if((tb != null) && !NativeLib.IsUnix())
+					if((tb != null) )
 					{
 						IntPtr h = tb.Handle;
 						bool bCapsLock = ((NativeMethods.GetKeyState(
@@ -2970,7 +2962,7 @@ namespace KeePass.UI
 				if(hIcon != IntPtr.Zero)
 				{
 					try { NativeMethods.DestroyIcon(hIcon); }
-					catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+					catch(Exception) { Debug.Assert(false); }
 				}
 			}
 
@@ -3073,8 +3065,6 @@ namespace KeePass.UI
 
 		public static bool PlayUacSound()
 		{
-			if(NativeLib.IsUnix()) return false;
-
 			try
 			{
 				string strRoot = "HKEY_CURRENT_USER\\AppEvents\\Schemes\\Apps\\.Default\\WindowsUAC\\";
@@ -3196,7 +3186,7 @@ namespace KeePass.UI
 					if(bVisible) f.Visible = true;
 				}
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		private static KeysConverter g_convKeys = null;
@@ -3504,7 +3494,7 @@ namespace KeePass.UI
 					return IconToBitmap(ico, w, h);
 				}
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			return null;
 		}
@@ -3523,53 +3513,20 @@ namespace KeePass.UI
 			if(e == null) { Debug.Assert(false); return false; }
 			if(cCtx == null) { Debug.Assert(false); return false; }
 
-			// On Windows, all of the following is already supported by .NET
-			if(!NativeLib.IsUnix()) return false;
-
-			Keys k = e.KeyCode;
-			bool bC = e.Control, bA = e.Alt, bS = e.Shift;
-			bool bMac = (NativeLib.GetPlatformID() == PlatformID.MacOSX);
-
-			if(((k == Keys.Apps) && !bA) || // Shift and Control irrelevant
-				((k == Keys.F10) && bS && !bA) || // Control irrelevant
-				(bMac && (k == Keys.D5) && bC && bA) ||
-				(bMac && (k == Keys.NumPad5) && bC))
-			{
-				bool bOp = bDown;
-				if(k == Keys.Apps) bOp = !bDown;
-
-				if(bOp)
-				{
-					ContextMenu cm = cCtx.ContextMenu;
-					ContextMenuStrip cms = cCtx.ContextMenuStrip;
-
-					if(cms != null) cms.Show(Cursor.Position);
-					else if(cm != null)
-					{
-						Point pt = cCtx.PointToClient(Cursor.Position);
-						cm.Show(cCtx, pt);
-					}
-				}
-
-				UIUtil.SetHandled(e, true);
-				return true;
-			}
-
-			return false;
+			 return false;
 		}
 
 		public static Size GetIconSize()
 		{
 #if DEBUG
-			if(!NativeLib.IsUnix())
-			{
+			
 				Debug.Assert(SystemInformation.IconSize.Width == DpiUtil.ScaleIntX(32));
 				Debug.Assert(SystemInformation.IconSize.Height == DpiUtil.ScaleIntY(32));
-			}
+			
 #endif
 
 			try { return SystemInformation.IconSize; }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 
 			return new Size(DpiUtil.ScaleIntX(32), DpiUtil.ScaleIntY(32));
 		}
@@ -3577,11 +3534,10 @@ namespace KeePass.UI
 		public static Size GetSmallIconSize()
 		{
 #if DEBUG
-			if(!NativeLib.IsUnix())
-			{
+			
 				Debug.Assert(SystemInformation.SmallIconSize.Width == DpiUtil.ScaleIntX(16));
 				Debug.Assert(SystemInformation.SmallIconSize.Height == DpiUtil.ScaleIntY(16));
-			}
+			
 #endif
 
 			// Throws under Mono 4.2.1 on MacOS;

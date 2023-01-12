@@ -52,19 +52,13 @@ namespace KeePass.UI
 		{
 			get
 			{
-				return (NativeLib.IsUnix() && Program.Config.UI.ForceSystemFontUnix);
+				return false;
 			}
 		}
 
 		private static void EnsureInitialized()
 		{
 			if(m_bInitialized) return;
-
-			if(NativeLib.IsUnix())
-			{
-				try { UnixLoadFonts(); }
-				catch(Exception) { Debug.Assert(false); }
-			}
 
 			if(m_fontUI == null) m_fontUI = SystemFonts.DefaultFont;
 

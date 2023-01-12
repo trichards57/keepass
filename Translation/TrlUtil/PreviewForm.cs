@@ -219,7 +219,7 @@ namespace TrlUtil
 						// the preview form to get the focus, which breaks the
 						// ability to enter composite characters (Korean, ...)
 						// in the main form
-						if(!NativeLib.IsUnix() && tc.IsHandleCreated && (i >= 0))
+						if(tc.IsHandleCreated && (i >= 0))
 							NativeMethods.SendMessage(tc.Handle,
 								NativeMethods.TCM_SETCURSEL, (IntPtr)i, IntPtr.Zero);
 						else tc.SelectedTab = tp;
@@ -271,7 +271,7 @@ namespace TrlUtil
 					new IntPtr(NativeMethods.MakeLong(NativeMethods.UIS_CLEAR,
 					NativeMethods.UISF_HIDEACCEL)), IntPtr.Zero);
 			}
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 	}
 }

@@ -76,8 +76,7 @@ namespace KeePass.UI
 
 		public SplitButtonEx() : base()
 		{
-			m_bSupported = (WinUtil.IsAtLeastWindowsVista &&
-				!NativeLib.IsUnix() && !Program.DesignMode);
+			m_bSupported = (WinUtil.IsAtLeastWindowsVista  && !Program.DesignMode);
 
 			if(m_bSupported) this.FlatStyle = FlatStyle.System;
 		}

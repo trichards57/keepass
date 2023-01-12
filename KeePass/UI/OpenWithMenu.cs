@@ -323,14 +323,6 @@ namespace KeePass.UI
 
 		private void FindAppsByKnown()
 		{
-			if(NativeLib.IsUnix())
-			{
-				// AppLocator.ChromePath prefers Chrome and falls back to
-				// Chromium, therefore try to find Chromium first, in order
-				// to prefer the name "Chromium" instead of "Google Chrome"
-				AddAppByFile(AppLocator.FindAppUnix("chromium"), "Chromium");
-			}
-
 			AddAppByFile(AppLocator.InternetExplorerPath, "Internet Explorer");
 			AddAppByFile(AppLocator.FirefoxPath, "Firefox");
 
@@ -339,20 +331,6 @@ namespace KeePass.UI
 
 			AddAppByFile(AppLocator.OperaPath, "Opera");
 			AddAppByFile(AppLocator.SafariPath, "Safari");
-
-			if(NativeLib.IsUnix())
-			{
-				AddAppByFile(AppLocator.FindAppUnix("arora"), "Arora");
-				AddAppByFile(AppLocator.FindAppUnix("brave-browser"), "Brave");
-				AddAppByFile(AppLocator.FindAppUnix("Dooble"), "Dooble"); // Upper-case
-				AddAppByFile(AppLocator.FindAppUnix("epiphany"), "Epiphany");
-				AddAppByFile(AppLocator.FindAppUnix("galeon"), "Galeon");
-				AddAppByFile(AppLocator.FindAppUnix("konqueror"), "Konqueror");
-				AddAppByFile(AppLocator.FindAppUnix("midori"), "Midori");
-				AddAppByFile(AppLocator.FindAppUnix("palemoon"), "Pale Moon");
-				AddAppByFile(AppLocator.FindAppUnix("rekonq"), "Rekonq");
-				AddAppByFile(AppLocator.FindAppUnix("vivaldi"), "Vivaldi");
-			}
 		}
 
 		private void FindAppsByRegistry()
@@ -362,13 +340,13 @@ namespace KeePass.UI
 
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/dd203067.aspx
 			try { FindAppsByRegistryPriv(Registry.CurrentUser, strSmiDef); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 			try { FindAppsByRegistryPriv(Registry.CurrentUser, strSmiWow); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 			try { FindAppsByRegistryPriv(Registry.LocalMachine, strSmiDef); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 			try { FindAppsByRegistryPriv(Registry.LocalMachine, strSmiWow); }
-			catch(Exception) { Debug.Assert(NativeLib.IsUnix()); }
+			catch(Exception) { Debug.Assert(false); }
 		}
 
 		private void FindAppsByRegistryPriv(RegistryKey kBase, string strRootSubKey)

@@ -46,7 +46,6 @@ namespace KeePass.UI
 		public ImageComboBoxEx() : base()
 		{
 			if(Program.DesignMode) return;
-			if(NativeLib.IsUnix()) return;
 
 			Debug.Assert(this.DrawMode == DrawMode.Normal);
 			this.DrawMode = DrawMode.OwnerDrawVariable;

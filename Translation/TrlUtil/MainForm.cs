@@ -1193,16 +1193,12 @@ namespace TrlUtil
 				if(str == m_strFile)
 				{
 					string strDir = UrlUtil.GetFileDirectory(str, true, true);
-					if(!NativeLib.IsUnix() || (strDir.IndexOfAny(new char[] {
-						'\\', '\"', '\'' }) < 0)) // Open safe paths only
-					{
 						ProcessStartInfo psi = new ProcessStartInfo();
 						psi.FileName = strDir;
 						psi.UseShellExecute = true;
 
 						Process p = Process.Start(psi);
 						if(p != null) p.Dispose();
-					}
 					return;
 				}
 

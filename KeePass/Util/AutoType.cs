@@ -437,15 +437,6 @@ namespace KeePass.Util
 		{
 			if(lSources == null) { Debug.Assert(false); return false; }
 
-			if(NativeLib.IsUnix())
-			{
-				if(!NativeMethods.TryXDoTool(true) && !NativeLib.IsWayland())
-				{
-					MessageService.ShowWarning(KPRes.AutoTypeXDoToolRequiredGlobalVer);
-					return false;
-				}
-			}
-
 			IntPtr hWnd;
 			string strWindow;
 			GetForegroundWindowInfo(out hWnd, out strWindow);
@@ -597,11 +588,7 @@ namespace KeePass.Util
 			string strWindow;
 			GetForegroundWindowInfo(out hWnd, out strWindow);
 
-			if(!NativeLib.IsUnix())
-			{
 				if(strWindow == null) { Debug.Assert(false); return false; }
-			}
-			else strWindow = string.Empty;
 
 			if(strSeq == null)
 			{

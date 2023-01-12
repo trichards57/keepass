@@ -70,7 +70,7 @@ namespace KeePass.UI
 
 		internal static bool IsSupported
 		{
-			get { return (WinUtil.IsAtLeastWindows2000 && !NativeLib.IsUnix()); }
+			get { return (WinUtil.IsAtLeastWindows2000); }
 		}
 
 		public ProtectedDialog(UIFormConstructor fnConstruct,

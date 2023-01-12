@@ -438,7 +438,7 @@ namespace KeePassLib.Utility
 			try { str = Path.GetFullPath(strPath); }
 			catch(Exception) { Debug.Assert(false); return strPath; }
 
-			Debug.Assert((str.IndexOf("\\..\\") < 0) || NativeLib.IsUnix());
+			Debug.Assert((str.IndexOf("\\..\\") < 0));
 			foreach(char ch in UrlUtil.DirSepChars)
 			{
 				string strSep = new string(ch, 1);
