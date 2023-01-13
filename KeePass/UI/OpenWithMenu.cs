@@ -171,7 +171,7 @@ namespace KeePass.UI
 			if(m_lOpenWith == null) CreateOpenWithList();
 
 			PwEntry[] v = (Program.MainForm.GetSelectedEntries() ??
-				MemUtil.EmptyArray<PwEntry>());
+				Array.Empty<PwEntry>());
 
 			bool bCanOpenWith = true;
 			uint uValidUrls = 0;

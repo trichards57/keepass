@@ -46,7 +46,6 @@ namespace KeePassLib.Utility
 		private const ushort ExifOrientationRB = 7;
 		private const ushort ExifOrientationLB = 8;
 
-#if (!KeePassLibSD && !KeePassUAP)
 		private sealed class GfxImage
 		{
 			public byte[] Data;
@@ -60,32 +59,12 @@ namespace KeePassLib.Utility
 				this.Width = w;
 				this.Height = h;
 			}
-
-#if DEBUG
-			// For debugger display
-			public override string ToString()
-			{
-				return (this.Width.ToString() + "x" + this.Height.ToString());
-			}
-#endif
 		}
-#endif
 
-#if KeePassUAP
 		public static Image LoadImage(byte[] pb)
 		{
 			if(pb == null) throw new ArgumentNullException("pb");
 
-			MemoryStream ms = new MemoryStream(pb, false);
-			try { return Image.FromStream(ms); }
-			finally { ms.Close(); }
-		}
-#else
-		public static Image LoadImage(byte[] pb)
-		{
-			if(pb == null) throw new ArgumentNullException("pb");
-
-#if !KeePassLibSD
 			// First try to load the data as ICO and afterwards as
 			// normal image, because trying to load an ICO using
 			// the normal image loading methods can result in a
@@ -96,7 +75,6 @@ namespace KeePassLib.Utility
 				if(imgIco != null) return imgIco;
 			}
 			catch(Exception) { Debug.Assert(false); }
-#endif
 
 			MemoryStream ms = new MemoryStream(pb, false);
 			try { return LoadImagePriv(ms); }
@@ -111,7 +89,6 @@ namespace KeePassLib.Utility
 			Image imgSrc = null;
 			try
 			{
-#if !KeePassLibSD
 				imgSrc = Image.FromStream(s);
 
 				NormalizeOrientation(imgSrc);
@@ -125,20 +102,12 @@ namespace KeePassLib.Utility
 					Debug.Assert(bmp.Size == imgSrc.Size);
 				}
 				catch(Exception) { Debug.Assert(false); }
-#else
-				imgSrc = new Bitmap(s);
-				Bitmap bmp = new Bitmap(imgSrc.Width, imgSrc.Height);
-#endif
 
 				using(Graphics g = Graphics.FromImage(bmp))
 				{
 					g.Clear(Color.Transparent);
 
-#if !KeePassLibSD
 					g.DrawImageUnscaled(imgSrc, 0, 0);
-#else
-					g.DrawImage(imgSrc, 0, 0);
-#endif
 				}
 
 				return bmp;
@@ -146,7 +115,6 @@ namespace KeePassLib.Utility
 			finally { if(imgSrc != null) imgSrc.Dispose(); }
 		}
 
-#if !KeePassLibSD
 		private static Image ExtractBestImageFromIco(byte[] pb)
 		{
 			List<GfxImage> l = UnpackIco(pb);
@@ -397,55 +365,12 @@ namespace KeePassLib.Utility
 				rSource.Y = rSource.Y + 0.5f;
 		}
 
-#if DEBUG
-		public static Image ScaleTest(Image[] vIcons)
-		{
-			Bitmap bmp = new Bitmap(1024, vIcons.Length * (256 + 12),
-				PixelFormat.Format32bppArgb);
-
-			using(Graphics g = Graphics.FromImage(bmp))
-			{
-				g.Clear(Color.White);
-
-				int[] v = new int[] { 16, 24, 32, 48, 64, 128, 256 };
-
-				int x;
-				int y = 8;
-
-				foreach(Image imgIcon in vIcons)
-				{
-					if(imgIcon == null) { Debug.Assert(false); continue; }
-
-					x = 128;
-
-					foreach(int q in v)
-					{
-						using(Image img = ScaleImage(imgIcon, q, q,
-							ScaleTransformFlags.UIIcon))
-						{
-							g.DrawImageUnscaled(img, x, y);
-						}
-
-						x += q + 8;
-					}
-
-					y += v[v.Length - 1] + 8;
-				}
-			}
-
-			return bmp;
-		}
-#endif // DEBUG
-#endif // !KeePassLibSD
-#endif // KeePassUAP
-
 		internal static void SetHighQuality(Graphics g)
 		{
 			if(g == null) { Debug.Assert(false); return; }
 
 			g.CompositingQuality = CompositingQuality.HighQuality;
 			g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-			// g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 			g.SmoothingMode = SmoothingMode.HighQuality;
 		}
 

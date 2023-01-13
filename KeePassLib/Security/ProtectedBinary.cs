@@ -417,17 +417,16 @@ namespace KeePassLib.Security
 
 			try
 			{
-				RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
-				byte[] pb = new byte[32];
-				rng.GetBytes(pb);
+				using (var rng = new RNGCryptoServiceProvider())
+				{
+					byte[] pb = new byte[32];
+					rng.GetBytes(pb);
 
-				Array.Copy(pb, 0, pbAll, i, 32);
-				i += 32;
+					Array.Copy(pb, 0, pbAll, i, 32);
+					i += 32;
 
-				MemUtil.ZeroByteArray(pb);
-				// In .NET 2.0, RNGCryptoServiceProvider does not
-				// implement IDisposable; in later .NET versions it does
-				MemUtil.DisposeIfPossible(rng);
+					MemUtil.ZeroByteArray(pb);
+				}
 			}
 			catch(Exception) { Debug.Assert(false); }
 

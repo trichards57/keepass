@@ -445,7 +445,7 @@ namespace KeePass.Util
 				if(d == null) d = new Dictionary<string, bool>();
 				d[kvp.Key] = true;
 			}
-			if(d == null) return MemUtil.EmptyArray<string>();
+			if(d == null) return Array.Empty<string>();
 
 			string[] v = new string[d.Count];
 			d.Keys.CopyTo(v, 0);

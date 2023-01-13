@@ -389,7 +389,7 @@ namespace KeePass.App.Configuration
 
 		private string[] SerializeWorkingDirectories()
 		{
-			if(!m_bRememberWorkDirs) return MemUtil.EmptyArray<string>();
+			if(!m_bRememberWorkDirs) return Array.Empty<string>();
 
 			List<string> l = new List<string>();
 			foreach(KeyValuePair<string, string> kvp in m_dictWorkingDirs)

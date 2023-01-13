@@ -488,8 +488,6 @@ namespace KeePass
             KdbxFile.DetermineLanguageId();
 
             m_appConfig = AppConfigSerializer.Load();
-            if (m_appConfig.Logging.Enabled)
-                AppLogEx.Open(PwDefs.ShortProductName);
 
             AppPolicy.Current = m_appConfig.Security.Policy.CloneDeep();
             AppPolicy.ApplyToConfig();
@@ -511,8 +509,6 @@ namespace KeePass
 
         public static void CommonTerminate()
         {
-            AppLogEx.Close();
-
             if (m_tempFilesPool != null)
             {
                 m_tempFilesPool.Clear(TempClearFlags.All);

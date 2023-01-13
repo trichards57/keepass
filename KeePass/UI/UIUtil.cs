@@ -1263,7 +1263,7 @@ namespace KeePass.UI
 			if(lv == null) throw new ArgumentNullException("lv");
 
 			ListView.SelectedListViewItemCollection lvsc = lv.SelectedItems;
-			if(lvsc == null) { Debug.Assert(false); return MemUtil.EmptyArray<object>(); }
+			if(lvsc == null) { Debug.Assert(false); return Array.Empty<object>(); }
 			int n = lvsc.Count; // Getting Count sends a message
 
 			object[] p = new object[n];

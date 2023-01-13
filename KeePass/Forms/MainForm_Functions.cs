@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -908,7 +909,7 @@ namespace KeePass.Forms
                 if (!bBinM) // No attachment in primary entry => search others
                 {
                     ulong cBins = 0;
-                    foreach (PwEntry peSel in (vSel ?? MemUtil.EmptyArray<PwEntry>()))
+                    foreach (PwEntry peSel in (vSel ?? Array.Empty<PwEntry>()))
                     {
                         if (peSel == null) { Debug.Assert(false); continue; }
                         cBins += peSel.Binaries.UCount;
@@ -5826,9 +5827,8 @@ namespace KeePass.Forms
                 dEnabledTags = new Dictionary<string, bool>();
                 List<string> lIntersect = pgSel.Entries.GetAt(0).Tags;
                 for (uint u = 1; u < uSelCount; ++u)
-                    lIntersect = new List<string>(MemUtil.Intersect(lIntersect,
-                        pgSel.Entries.GetAt(u).Tags, null));
-                foreach (string strTag in MemUtil.Except(lAllTags, lIntersect, null))
+                    lIntersect = lIntersect.Intersect(pgSel.Entries.GetAt(u).Tags).ToList();
+                foreach (string strTag in lAllTags.Except(lIntersect))
                     dEnabledTags[strTag] = true;
             }
             else if (tmm == TagsMenuMode.Remove)
