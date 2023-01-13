@@ -78,56 +78,6 @@ namespace KeePass.Util
 			});
 		}
 
-		/* private static byte[] GetDataW(uint uFormat)
-		{
-			IntPtr h = NativeMethods.GetClipboardData(uFormat);
-			if(h == IntPtr.Zero) return null;
-
-			UIntPtr pSize = NativeMethods.GlobalSize(h);
-			if(pSize == UIntPtr.Zero) return MemUtil.EmptyByteArray;
-
-			IntPtr pMem = NativeMethods.GlobalLock(h);
-			if(pMem == IntPtr.Zero) { Debug.Assert(false); return null; }
-
-			byte[] pbMem = new byte[pSize.ToUInt64()];
-			Marshal.Copy(pMem, pbMem, 0, pbMem.Length);
-
-			NativeMethods.GlobalUnlock(h); // May return false on success
-
-			return pbMem;
-		}
-
-		private static string GetStringW(string strFormat, bool? bForceUni)
-		{
-			bool bUni = (bForceUni.HasValue ? bForceUni.Value :
-				(Marshal.SystemDefaultCharSize >= 2));
-
-			uint uFormat = (bUni ? NativeMethods.CF_UNICODETEXT : NativeMethods.CF_TEXT);
-			if(!string.IsNullOrEmpty(strFormat))
-				uFormat = NativeMethods.RegisterClipboardFormat(strFormat);
-
-			byte[] pb = GetDataW(uFormat);
-			if(pb == null) { Debug.Assert(false); return null; }
-
-			int nBytes = 0;
-			for(int i = 0; i < pb.Length; i += (bUni ? 2 : 1))
-			{
-				if(bUni && (i == (pb.Length - 1))) { Debug.Assert(false); return null; }
-
-				ushort uValue = (bUni ? (ushort)(((ushort)pb[i] << 8) |
-					(ushort)pb[i + 1]) : (ushort)pb[i]);
-				if(uValue == 0) break;
-
-				nBytes += (bUni ? 2 : 1);
-			}
-
-			byte[] pbCharsOnly = new byte[nBytes];
-			Array.Copy(pb, pbCharsOnly, nBytes);
-
-			Encoding enc = (bUni ? new UnicodeEncoding(false, false) : Encoding.Default);
-			return enc.GetString(pbCharsOnly);
-		} */
-
 		private static bool SetDataW(uint uFormat, byte[] pbData)
 		{
 			UIntPtr pSize = new UIntPtr((uint)pbData.Length);

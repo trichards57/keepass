@@ -18,213 +18,170 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Windows.Forms;
-
 using KeePass.App;
 using KeePass.Ecas;
 using KeePass.Forms;
 using KeePass.Native;
 using KeePass.UI;
-using KeePass.Util;
 using KeePass.Util.Spr;
-
 using KeePassLib;
 using KeePassLib.Cryptography;
 using KeePassLib.Security;
 using KeePassLib.Utility;
 
-using NativeLib = KeePassLib.Native.NativeLib;
 
 namespace KeePass.Util
 {
-	public static partial class ClipboardUtil
-	{
-		private static byte[] g_pbDataHash = null;
-		private static readonly CriticalSectionEx g_csClearing = new CriticalSectionEx();
+    public static partial class ClipboardUtil
+    {
+        private static byte[] g_pbDataHash = null;
+        private static readonly CriticalSectionEx g_csClearing = new CriticalSectionEx();
 
-		[Obsolete]
-		public static bool Copy(string strToCopy, bool bIsEntryInfo,
-			PwEntry peEntryInfo, PwDatabase pwReferenceSource)
-		{
-			return Copy(strToCopy, true, bIsEntryInfo, peEntryInfo,
-				pwReferenceSource, IntPtr.Zero);
-		}
+        public static bool Copy(string strToCopy, bool bSprCompile, bool bIsEntryInfo,
+            PwEntry peEntryInfo, PwDatabase pwReferenceSource, IntPtr hOwner)
+        {
+            if (strToCopy == null) throw new ArgumentNullException("strToCopy");
+            if (strToCopy.Length == 0) { Clear(); return true; }
 
-		[Obsolete]
-		public static bool Copy(ProtectedString psToCopy, bool bIsEntryInfo,
-			PwEntry peEntryInfo, PwDatabase pwReferenceSource)
-		{
-			if(psToCopy == null) throw new ArgumentNullException("psToCopy");
-			return Copy(psToCopy.ReadString(), true, bIsEntryInfo, peEntryInfo,
-				pwReferenceSource, IntPtr.Zero);
-		}
+            if (bIsEntryInfo && !AppPolicy.Try(AppPolicyId.CopyToClipboard))
+                return false;
 
-		public static bool Copy(string strToCopy, bool bSprCompile, bool bIsEntryInfo,
-			PwEntry peEntryInfo, PwDatabase pwReferenceSource, IntPtr hOwner)
-		{
-			if(strToCopy == null) throw new ArgumentNullException("strToCopy");
-			if(strToCopy.Length == 0) { Clear(); return true; }
+            string strData = strToCopy;
+            if (bSprCompile)
+                strData = SprEngine.Compile(strData, new SprContext(
+                    peEntryInfo, pwReferenceSource, SprCompileFlags.All));
 
-			if(bIsEntryInfo && !AppPolicy.Try(AppPolicyId.CopyToClipboard))
-				return false;
+            try
+            {
+                if (!OpenW(hOwner, true))
+                    throw new InvalidOperationException();
 
-			string strData = strToCopy;
-			if(bSprCompile)
-				strData = SprEngine.Compile(strData, new SprContext(
-					peEntryInfo, pwReferenceSource, SprCompileFlags.All));
+                bool bFailed = false;
+                if (!AttachIgnoreFormatsW()) bFailed = true;
+                if (!SetDataW(null, strData, null)) bFailed = true;
+                CloseW();
 
-			try
-			{
-					if(!OpenW(hOwner, true))
-						throw new InvalidOperationException();
+                if (bFailed) return false;
+            }
+            catch (Exception) { Debug.Assert(false); return false; }
 
-					bool bFailed = false;
-					if(!AttachIgnoreFormatsW()) bFailed = true;
-					if(!SetDataW(null, strData, null)) bFailed = true;
-					CloseW();
+            g_pbDataHash = HashString(strData);
 
-					if(bFailed) return false;
-			}
-			catch(Exception) { Debug.Assert(false); return false; }
+            peEntryInfo?.Touch(false);
 
-			g_pbDataHash = HashString(strData);
+            if (bIsEntryInfo)
+                Program.TriggerSystem.RaiseEvent(EcasEventIDs.CopiedEntryInfo,
+                    EcasProperty.Text, strData);
 
-			if(peEntryInfo != null) peEntryInfo.Touch(false);
+            // SprEngine.Compile might have modified the database
+            MainForm mf = Program.MainForm;
+            if ((mf != null) && bSprCompile)
+            {
+                mf.RefreshEntriesList();
+                mf.UpdateUI(false, null, false, null, false, null, false);
+            }
 
-			if(bIsEntryInfo)
-				Program.TriggerSystem.RaiseEvent(EcasEventIDs.CopiedEntryInfo,
-					EcasProperty.Text, strData);
+            return true;
+        }
 
-			// SprEngine.Compile might have modified the database
-			MainForm mf = Program.MainForm;
-			if((mf != null) && bSprCompile)
-			{
-				mf.RefreshEntriesList();
-				mf.UpdateUI(false, null, false, null, false, null, false);
-			}
+        public static bool Copy(byte[] pbToCopy, string strFormat, bool bIsEntryInfo,
+            IntPtr hOwner)
+        {
+            if (pbToCopy == null) throw new ArgumentNullException("pbToCopy");
+            if (pbToCopy.Length == 0) { Clear(); return true; }
 
-			return true;
-		}
+            string strMedia = StrUtil.GetCustomMediaType(strFormat);
+            string strData = StrUtil.DataToDataUri(pbToCopy, strMedia);
 
-		[Obsolete]
-		public static bool Copy(byte[] pbToCopy, string strFormat, bool bIsEntryInfo)
-		{
-			return Copy(pbToCopy, strFormat, bIsEntryInfo, IntPtr.Zero);
-		}
+            return Copy(strData, false, bIsEntryInfo, null, null, hOwner);
+        }
 
-		[Obsolete]
-		public static bool Copy(byte[] pbToCopy, string strFormat, bool bEncode,
-			bool bIsEntryInfo, IntPtr hOwner)
-		{
-			return Copy(pbToCopy, strFormat, bIsEntryInfo, hOwner);
-		}
+        public static bool CopyAndMinimize(string strToCopy, bool bIsEntryInfo,
+            Form formContext, PwEntry peContext, PwDatabase pdContext)
+        {
+            if (strToCopy == null) { Debug.Assert(false); return false; }
 
-		public static bool Copy(byte[] pbToCopy, string strFormat, bool bIsEntryInfo,
-			IntPtr hOwner)
-		{
-			if(pbToCopy == null) throw new ArgumentNullException("pbToCopy");
-			if(pbToCopy.Length == 0) { Clear(); return true; }
+            IntPtr hOwner = ((formContext != null) ? formContext.Handle : IntPtr.Zero);
 
-			string strMedia = StrUtil.GetCustomMediaType(strFormat);
-			string strData = StrUtil.DataToDataUri(pbToCopy, strMedia);
+            if (Copy(strToCopy, true, bIsEntryInfo, peContext, pdContext, hOwner))
+            {
+                if (formContext != null)
+                {
+                    if (Program.Config.MainWindow.DropToBackAfterClipboardCopy)
+                        NativeMethods.LoseFocus(formContext, true);
 
-			return Copy(strData, false, bIsEntryInfo, null, null, hOwner);
-		}
+                    if (Program.Config.MainWindow.MinimizeAfterClipboardCopy &&
+                        formContext.MinimizeBox && formContext.Enabled)
+                        UIUtil.SetWindowState(formContext, FormWindowState.Minimized);
+                }
 
-		[Obsolete]
-		public static byte[] GetEncodedData(string strFormat, IntPtr hOwner)
-		{
-			return GetData(strFormat);
-		}
+                return true;
+            }
 
-		public static bool CopyAndMinimize(string strToCopy, bool bIsEntryInfo,
-			Form formContext, PwEntry peContext, PwDatabase pdContext)
-		{
-			if(strToCopy == null) { Debug.Assert(false); return false; }
+            return false;
+        }
 
-			IntPtr hOwner = ((formContext != null) ? formContext.Handle : IntPtr.Zero);
+        public static bool CopyAndMinimize(ProtectedString psToCopy, bool bIsEntryInfo,
+            Form formContext, PwEntry peContext, PwDatabase pdContext)
+        {
+            if (psToCopy == null) { Debug.Assert(false); return false; }
 
-			if(Copy(strToCopy, true, bIsEntryInfo, peContext, pdContext, hOwner))
-			{
-				if(formContext != null)
-				{
-					if(Program.Config.MainWindow.DropToBackAfterClipboardCopy)
-						NativeMethods.LoseFocus(formContext, true);
+            return CopyAndMinimize(psToCopy.ReadString(), bIsEntryInfo,
+                formContext, peContext, pdContext);
+        }
 
-					if(Program.Config.MainWindow.MinimizeAfterClipboardCopy &&
-						formContext.MinimizeBox && formContext.Enabled)
-						UIUtil.SetWindowState(formContext, FormWindowState.Minimized);
-				}
+        /// <summary>
+        /// Safely clear the clipboard. The clipboard clearing method
+        /// of the .NET Framework stores an empty <c>DataObject</c>
+        /// in the clipboard; this can cause incompatibilities with
+        /// other applications. Therefore, the <c>Clear</c> method of
+        /// <c>ClipboardUtil</c> first tries to clear the clipboard using
+        /// native Windows functions (which *really* clear the clipboard).
+        /// </summary>
+        public static void Clear()
+        {
+            // Ensure that there's no infinite recursion
+            if (!g_csClearing.TryEnter()) { Debug.Assert(false); return; }
 
-				return true;
-			}
+            // In some situations (e.g. when running in a VM, when using
+            // a clipboard extension utility, ...) the clipboard cannot
+            // be cleared; for this case we first overwrite the clipboard
+            // with a non-sensitive text
+            try { Copy("--", false, false, null, null, IntPtr.Zero); }
+            catch (Exception) { Debug.Assert(false); }
 
-			return false;
-		}
+            bool bNativeSuccess = false;
+            try
+            {
 
-		public static bool CopyAndMinimize(ProtectedString psToCopy, bool bIsEntryInfo,
-			Form formContext, PwEntry peContext, PwDatabase pdContext)
-		{
-			if(psToCopy == null) { Debug.Assert(false); return false; }
+                if (OpenW(IntPtr.Zero, true)) // Clears the clipboard
+                {
+                    CloseW();
+                    bNativeSuccess = true;
+                }
 
-			return CopyAndMinimize(psToCopy.ReadString(), bIsEntryInfo,
-				formContext, peContext, pdContext);
-		}
 
-		/// <summary>
-		/// Safely clear the clipboard. The clipboard clearing method
-		/// of the .NET Framework stores an empty <c>DataObject</c>
-		/// in the clipboard; this can cause incompatibilities with
-		/// other applications. Therefore, the <c>Clear</c> method of
-		/// <c>ClipboardUtil</c> first tries to clear the clipboard using
-		/// native Windows functions (which *really* clear the clipboard).
-		/// </summary>
-		public static void Clear()
-		{
-			// Ensure that there's no infinite recursion
-			if(!g_csClearing.TryEnter()) { Debug.Assert(false); return; }
+            }
+            catch (Exception) { Debug.Assert(false); }
 
-			// In some situations (e.g. when running in a VM, when using
-			// a clipboard extension utility, ...) the clipboard cannot
-			// be cleared; for this case we first overwrite the clipboard
-			// with a non-sensitive text
-			try { Copy("--", false, false, null, null, IntPtr.Zero); }
-			catch(Exception) { Debug.Assert(false); }
+            g_pbDataHash = null;
+            g_csClearing.Exit();
 
-			bool bNativeSuccess = false;
-			try
-			{
-				
-					if(OpenW(IntPtr.Zero, true)) // Clears the clipboard
-					{
-						CloseW();
-						bNativeSuccess = true;
-					}
-				
-				
-			}
-			catch(Exception) { Debug.Assert(false); }
+            if (bNativeSuccess) return;
 
-			g_pbDataHash = null;
-			g_csClearing.Exit();
+            Debug.Assert(false);
+            try { Clipboard.Clear(); } // Fallback; empty data object
+            catch (Exception) { Debug.Assert(false); }
+        }
 
-			if(bNativeSuccess) return;
-
-			Debug.Assert(false);
-			try { Clipboard.Clear(); } // Fallback; empty data object
-			catch(Exception) { Debug.Assert(false); }
-		}
-
-		public static void ClearIfOwner()
-		{
-			// Handle-based detection doesn't work well, because a control
-			// or dialog that stored the data may not exist anymore and
-			// thus GetClipboardOwner returns null
-			/* bool bOwnHandle = false;
+        public static void ClearIfOwner()
+        {
+            // Handle-based detection doesn't work well, because a control
+            // or dialog that stored the data may not exist anymore and
+            // thus GetClipboardOwner returns null
+            /* bool bOwnHandle = false;
 			try
 			{
 				if(!NativeLib.IsUnix())
@@ -235,76 +192,73 @@ namespace KeePass.Util
 			}
 			catch(Exception) { Debug.Assert(false); } */
 
-			if(g_pbDataHash == null) return;
+            if (g_pbDataHash == null) return;
 
-			byte[] pbCur = ComputeHash();
-			if((pbCur == null) || !MemUtil.ArraysEqual(pbCur, g_pbDataHash))
-				return;
+            byte[] pbCur = ComputeHash();
+            if ((pbCur == null) || !MemUtil.ArraysEqual(pbCur, g_pbDataHash))
+                return;
 
-			Clear();
-		}
+            Clear();
+        }
 
-		private static byte[] HashString(string str)
-		{
-			try
-			{
-				if(string.IsNullOrEmpty(str)) return null;
+        private static byte[] HashString(string str)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(str)) return null;
 
-				byte[] pb = StrUtil.Utf8.GetBytes(str);
-				return CryptoUtil.HashSha256(pb);
-			}
-			catch(Exception) { Debug.Assert(false); }
+                byte[] pb = StrUtil.Utf8.GetBytes(str);
+                return CryptoUtil.HashSha256(pb);
+            }
+            catch (Exception) { Debug.Assert(false); }
 
-			return null;
-		}
+            return null;
+        }
 
-		public static byte[] ComputeHash()
-		{
-			try { return HashString(GetText()); }
-			catch(Exception) { Debug.Assert(false); }
+        public static byte[] ComputeHash()
+        {
+            try { return HashString(GetText()); }
+            catch (Exception) { Debug.Assert(false); }
 
-			return null;
-		}
+            return null;
+        }
 
-		public static bool ContainsText()
-		{
-			return Clipboard.ContainsText();
-		}
+        public static bool ContainsText()
+        {
+            return Clipboard.ContainsText();
+        }
 
-		public static bool ContainsData(string strFormat)
-		{
-			if(string.IsNullOrEmpty(strFormat)) { Debug.Assert(false); return false; }
-			if(strFormat.Equals(DataFormats.UnicodeText, StrUtil.CaseIgnoreCmp) ||
-				strFormat.Equals(DataFormats.Text, StrUtil.CaseIgnoreCmp) ||
-				strFormat.Equals(DataFormats.OemText, StrUtil.CaseIgnoreCmp))
-				return ContainsText();
+        public static bool ContainsData(string strFormat)
+        {
+            if (string.IsNullOrEmpty(strFormat)) { Debug.Assert(false); return false; }
+            if (strFormat.Equals(DataFormats.UnicodeText, StrUtil.CaseIgnoreCmp) ||
+                strFormat.Equals(DataFormats.Text, StrUtil.CaseIgnoreCmp) ||
+                strFormat.Equals(DataFormats.OemText, StrUtil.CaseIgnoreCmp))
+                return ContainsText();
 
-			string strData = GetText();
-			if(string.IsNullOrEmpty(strData)) return false;
+            string strData = GetText();
+            if (string.IsNullOrEmpty(strData)) return false;
 
-			return StrUtil.IsDataUri(strData, StrUtil.GetCustomMediaType(strFormat));
-		}
+            return StrUtil.IsDataUri(strData, StrUtil.GetCustomMediaType(strFormat));
+        }
 
-		public static string GetText()
-		{
-				return Clipboard.GetText();
-		}
+        public static string GetText() => Clipboard.GetText();
 
-		public static byte[] GetData(string strFormat)
-		{
-			try
-			{
-				string str = GetText();
-				if(string.IsNullOrEmpty(str)) return null;
+        public static byte[] GetData(string strFormat)
+        {
+            try
+            {
+                string str = GetText();
+                if (string.IsNullOrEmpty(str)) return null;
 
-				string strMedia = StrUtil.GetCustomMediaType(strFormat);
-				if(!StrUtil.IsDataUri(str, strMedia)) return null;
+                string strMedia = StrUtil.GetCustomMediaType(strFormat);
+                if (!StrUtil.IsDataUri(str, strMedia)) return null;
 
-				return StrUtil.DataUriToData(str);
-			}
-			catch(Exception) { Debug.Assert(false); }
+                return StrUtil.DataUriToData(str);
+            }
+            catch (Exception) { Debug.Assert(false); }
 
-			return null;
-		}
-	}
+            return null;
+        }
+    }
 }

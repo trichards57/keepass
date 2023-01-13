@@ -30,43 +30,14 @@ namespace KeePass.Util
 {
 	public static class NetUtil
 	{
-		/* public static string GZipUtf8ResultToString(DownloadDataCompletedEventArgs e)
+		public static string WebPageLogin(Uri url, string strPostData, out List<KeyValuePair<string, string>> vCookies)
 		{
-			if(e.Cancelled || (e.Error != null) || (e.Result == null))
-				return null;
+			if(url == null)
+				throw new ArgumentNullException("url");
 
-			MemoryStream msZipped = new MemoryStream(e.Result);
-			GZipStream gz = new GZipStream(msZipped, CompressionMode.Decompress);
-			BinaryReader br = new BinaryReader(gz);
-			MemoryStream msUTF8 = new MemoryStream();
+			var hwr = (HttpWebRequest)WebRequest.Create(url);
 
-			while(true)
-			{
-				byte[] pb = null;
-
-				try { pb = br.ReadBytes(4096); }
-				catch(Exception) { }
-
-				if((pb == null) || (pb.Length == 0)) break;
-
-				msUTF8.Write(pb, 0, pb.Length);
-			}
-
-			br.Close();
-			gz.Close();
-			msZipped.Close();
-
-			return StrUtil.Utf8.GetString(msUTF8.ToArray());
-		} */
-
-		public static string WebPageLogin(Uri url, string strPostData,
-			out List<KeyValuePair<string, string>> vCookies)
-		{
-			if(url == null) throw new ArgumentNullException("url");
-
-			HttpWebRequest hwr = (HttpWebRequest)HttpWebRequest.Create(url);
-
-			byte[] pbPostData = Encoding.ASCII.GetBytes(strPostData);
+			var pbPostData = Encoding.ASCII.GetBytes(strPostData);
 
 			hwr.Method = "POST";
 			hwr.ContentType = "application/x-www-form-urlencoded";

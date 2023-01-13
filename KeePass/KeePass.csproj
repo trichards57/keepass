@@ -53,6 +53,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Security" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -920,7 +921,6 @@
     </Compile>
     <Compile Include="Util\Archive\ImageArchive.cs" />
     <Compile Include="Util\Archive\XspArchive.cs" />
-    <Compile Include="Util\Archive\ZipArchiveEx.cs" />
     <Compile Include="Util\AutoTypeCtx.cs" />
     <Compile Include="Util\BinaryDataClassifier.cs" />
     <Compile Include="Util\BinaryDataUtil.cs" />
@@ -1152,8 +1152,6 @@
     <Compile Include="Util\ClipboardContents.cs" />
     <Compile Include="Util\ClipboardEventChainBlocker.cs" />
     <Compile Include="Util\ClipboardUtil.cs" />
-    <Compile Include="Util\ClipboardUtil.Unix.cs" />
-    <Compile Include="Util\ClipboardUtil.Uwp.cs" />
     <Compile Include="Util\ClipboardUtil.Windows.cs" />
     <Compile Include="Util\CommandLineArgs.cs" />
     <Compile Include="Ecas\EcasActionType.cs" />

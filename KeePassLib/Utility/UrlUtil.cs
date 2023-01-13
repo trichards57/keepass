@@ -38,32 +38,9 @@ namespace KeePassLib.Utility
         private static readonly char[] g_vPathTrimCharsWs = new char[] {
             '\"', ' ', '\t', '\r', '\n' };
 
-        public static char LocalDirSepChar
-        {
-            get { return Path.DirectorySeparatorChar; }
-        }
+        public static char LocalDirSepChar => Path.DirectorySeparatorChar;
 
-        private static char[] g_vDirSepChars = null;
-        private static char[] DirSepChars
-        {
-            get
-            {
-                if (g_vDirSepChars == null)
-                {
-                    List<char> l = new List<char>();
-                    l.Add('/'); // For URLs, also on Windows
-
-                    if (!l.Contains(UrlUtil.LocalDirSepChar))
-                    {
-                        l.Add(UrlUtil.LocalDirSepChar);
-                    }
-
-                    g_vDirSepChars = l.ToArray();
-                }
-
-                return g_vDirSepChars;
-            }
-        }
+        private static char[] DirSepChars => new[] { '/', '\\' };
 
         /// <summary>
         /// Get the directory (path) of a file name. The returned string may be
@@ -81,8 +58,7 @@ namespace KeePassLib.Utility
         /// This should only be set to <c>true</c>, if the returned path is directly
         /// passed to some directory API.</param>
         /// <returns>Directory of the file.</returns>
-        public static string GetFileDirectory(string strFile, bool bAppendTerminatingChar,
-            bool bEnsureValidDirSpec)
+        public static string GetFileDirectory(string strFile, bool bAppendTerminatingChar, bool bEnsureValidDirSpec)
         {
             Debug.Assert(strFile != null);
             if (strFile == null) throw new ArgumentNullException("strFile");
@@ -108,14 +84,10 @@ namespace KeePassLib.Utility
         /// <returns>File name of the specified file.</returns>
         public static string GetFileName(string strPath)
         {
-            Debug.Assert(strPath != null); if (strPath == null) throw new ArgumentNullException("strPath");
+            if (strPath == null)
+                throw new ArgumentNullException("strPath");
 
-            int nLastSep = strPath.LastIndexOfAny(UrlUtil.DirSepChars);
-
-            if (nLastSep < 0) return strPath;
-            if (nLastSep >= (strPath.Length - 1)) return string.Empty;
-
-            return strPath.Substring(nLastSep + 1);
+            return Path.GetFileName(strPath);
         }
 
         /// <summary>
@@ -125,7 +97,8 @@ namespace KeePassLib.Utility
         /// <returns>File name without extension.</returns>
         public static string StripExtension(string strPath)
         {
-            Debug.Assert(strPath != null); if (strPath == null) throw new ArgumentNullException("strPath");
+            if (strPath == null) 
+                throw new ArgumentNullException("strPath");
 
             int nLastDirSep = strPath.LastIndexOfAny(UrlUtil.DirSepChars);
             int nLastExtDot = strPath.LastIndexOf('.');
@@ -142,15 +115,10 @@ namespace KeePassLib.Utility
         /// <returns>Extension without prepending dot.</returns>
         public static string GetExtension(string strPath)
         {
-            Debug.Assert(strPath != null); if (strPath == null) throw new ArgumentNullException("strPath");
+            if (strPath == null)
+                throw new ArgumentNullException("strPath");
 
-            int nLastDirSep = strPath.LastIndexOfAny(UrlUtil.DirSepChars);
-            int nLastExtDot = strPath.LastIndexOf('.');
-
-            if (nLastExtDot <= nLastDirSep) return string.Empty;
-            if (nLastExtDot == (strPath.Length - 1)) return string.Empty;
-
-            return strPath.Substring(nLastExtDot + 1);
+            return Path.GetExtension(strPath).Substring(1);
         }
 
         /// <summary>
@@ -163,76 +131,19 @@ namespace KeePassLib.Utility
         /// <returns>Path having a directory separator as last character.</returns>
         public static string EnsureTerminatingSeparator(string strPath, bool bUrl)
         {
-            Debug.Assert(strPath != null); if (strPath == null) throw new ArgumentNullException("strPath");
+            if (strPath == null) 
+                throw new ArgumentNullException("strPath");
 
             int nLength = strPath.Length;
             if (nLength <= 0) return string.Empty;
 
             char chLast = strPath[nLength - 1];
-            if (Array.IndexOf<char>(UrlUtil.DirSepChars, chLast) >= 0)
+            if (Array.IndexOf(DirSepChars, chLast) >= 0)
                 return strPath;
 
             if (bUrl) return (strPath + '/');
-            return (strPath + UrlUtil.LocalDirSepChar);
+            return strPath + LocalDirSepChar;
         }
-
-        /* /// <summary>
-		/// File access mode enumeration. Used by the <c>FileAccessible</c>
-		/// method.
-		/// </summary>
-		public enum FileAccessMode
-		{
-			/// <summary>
-			/// Opening a file in read mode. The specified file must exist.
-			/// </summary>
-			Read = 0,
-
-			/// <summary>
-			/// Opening a file in create mode. If the file exists already, it
-			/// will be overwritten. If it doesn't exist, it will be created.
-			/// The return value is <c>true</c>, if data can be written to the
-			/// file.
-			/// </summary>
-			Create
-		} */
-
-        /* /// <summary>
-		/// Test if a specified path is accessible, either in read or write mode.
-		/// </summary>
-		/// <param name="strFilePath">Path to test.</param>
-		/// <param name="fMode">Requested file access mode.</param>
-		/// <returns>Returns <c>true</c> if the specified path is accessible in
-		/// the requested mode, otherwise the return value is <c>false</c>.</returns>
-		public static bool FileAccessible(string strFilePath, FileAccessMode fMode)
-		{
-			Debug.Assert(strFilePath != null);
-			if(strFilePath == null) throw new ArgumentNullException("strFilePath");
-
-			if(fMode == FileAccessMode.Read)
-			{
-				FileStream fs;
-
-				try { fs = File.OpenRead(strFilePath); }
-				catch(Exception) { return false; }
-				if(fs == null) return false;
-
-				fs.Close();
-				return true;
-			}
-			else if(fMode == FileAccessMode.Create)
-			{
-				FileStream fs;
-
-				try { fs = File.Create(strFilePath); }
-				catch(Exception) { return false; }
-				if(fs == null) return false;
-
-				fs.Close();
-				return true;
-			}
-
-			return false;
-		} */
 
         internal static int IndexOfSecondEnclQuote(string str)
         {
@@ -283,9 +194,6 @@ namespace KeePassLib.Utility
 
         public static bool UnhideFile(string strFile)
         {
-#if KeePassLibSD
-			return false;
-#else
             if (strFile == null) throw new ArgumentNullException("strFile");
 
             try
@@ -298,14 +206,10 @@ namespace KeePassLib.Utility
             catch (Exception) { }
 
             return false;
-#endif
         }
 
         public static bool HideFile(string strFile, bool bHide)
         {
-#if KeePassLibSD
-			return false;
-#else
             if (strFile == null) throw new ArgumentNullException("strFile");
 
             try
@@ -325,7 +229,6 @@ namespace KeePassLib.Utility
             catch (Exception) { }
 
             return false;
-#endif
         }
 
         public static string MakeRelativePath(string strBaseFile, string strTargetFile)
@@ -402,11 +305,7 @@ namespace KeePassLib.Utility
                     (new char[] { '\\', '/' }));
 
                 List<string> l = new List<string>();
-#if !KeePassLibSD
                 string[] v = strPath.Split(vSep, StringSplitOptions.None);
-#else
-				string[] v = strPath.Split(vSep);
-#endif
                 Debug.Assert((v.Length >= 3) && (v[0].Length == 0) &&
                     (v[1].Length == 0));
 
@@ -576,10 +475,7 @@ namespace KeePassLib.Utility
             return strUrl.Substring(i);
         }
 
-        public static string ConvertSeparators(string strPath)
-        {
-            return ConvertSeparators(strPath, UrlUtil.LocalDirSepChar);
-        }
+        public static string ConvertSeparators(string strPath) => ConvertSeparators(strPath, LocalDirSepChar);
 
         public static string ConvertSeparators(string strPath, char chSeparator)
         {
@@ -721,24 +617,17 @@ namespace KeePassLib.Utility
 
         public static string GetTempPath()
         {
-            string strDir;
-#if KeePassUAP
-			strDir = Windows.Storage.ApplicationData.Current.TemporaryFolder.Path;
-#else
-            strDir = Path.GetTempPath();
-#endif
+            var strDir = Path.GetTempPath();
 
             try
             {
-                if (!Directory.Exists(strDir)) Directory.CreateDirectory(strDir);
+                Directory.CreateDirectory(strDir);
             }
             catch (Exception) { Debug.Assert(false); }
 
             return strDir;
         }
 
-#if !KeePassLibSD
-        // Structurally mostly equivalent to UrlUtil.GetFileInfos
         public static List<string> GetFilePaths(string strDir, string strPattern,
             SearchOption opt)
         {
@@ -809,7 +698,6 @@ namespace KeePassLib.Utility
 
             return l;
         }
-#endif
 
         /// <summary>
         /// Expand shell variables in a string.
