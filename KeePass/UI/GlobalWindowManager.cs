@@ -147,8 +147,6 @@ namespace KeePass.UI
 
             CustomizeForm(form);
 
-            MonoWorkarounds.ApplyTo(form);
-
             Debug.Assert(!(form is MainForm)); // MainForm calls the following itself
             CustomizeFormHandleCreated(form, true, true);
 
@@ -178,8 +176,6 @@ namespace KeePass.UI
                         if (GlobalWindowManager.WindowRemoved != null)
                             GlobalWindowManager.WindowRemoved(null, new GwmWindowEventArgs(
                                 form, g_vWindows[i].Value));
-
-                        MonoWorkarounds.Release(form);
 
                         Debug.Assert(!(form is MainForm)); // MainForm calls the following itself
                         CustomizeFormHandleCreated(form, false, false);

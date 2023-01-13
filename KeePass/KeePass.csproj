@@ -372,9 +372,6 @@
     <Compile Include="..\KeePassLib\Utility\MessageService.cs">
       <Link>KeePassLib\Utility\MessageService.cs</Link>
     </Compile>
-    <Compile Include="..\KeePassLib\Utility\MonoWorkarounds.cs">
-      <Link>KeePassLib\Utility\MonoWorkarounds.cs</Link>
-    </Compile>
     <Compile Include="..\KeePassLib\Utility\StrUtil.cs">
       <Link>KeePassLib\Utility\StrUtil.cs</Link>
     </Compile>

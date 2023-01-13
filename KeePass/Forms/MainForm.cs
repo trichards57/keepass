@@ -118,8 +118,6 @@ namespace KeePass.Forms
 
 			if(!Program.DesignMode)
 			{
-				if(MonoWorkarounds.IsRequired(891029)) m_tabMain.Height += 5;
-
 				SuspendLayoutScope sls = new SuspendLayoutScope(false,
 					m_menuMain, m_ctxGroupList, m_ctxPwList, m_ctxTray);
 
@@ -139,7 +137,6 @@ namespace KeePass.Forms
 		private bool m_bFormLoadCalled = false;
 		private void OnFormLoad(object sender, EventArgs e)
 		{
-			if(m_bFormLoadCalled && MonoWorkarounds.IsRequired(3574233558U)) return;
 			m_bFormLoadCalled = true;
 			m_bFormLoaded = false;
 
@@ -305,16 +302,8 @@ namespace KeePass.Forms
 			if((sizeX != AppDefs.InvalidWindowValue) &&
 				(sizeY != AppDefs.InvalidWindowValue) && bWndValid)
 			{
-				if(MonoWorkarounds.IsRequired(686017))
-				{
-					sizeX = Math.Max(250, sizeX);
-					sizeY = Math.Max(250, sizeY);
-				}
-
 				this.Size = new Size(sizeX, sizeY);
 			}
-			if(MonoWorkarounds.IsRequired(686017))
-				this.MinimumSize = new Size(250, 250);
 
 			Rectangle rectRestWindow = new Rectangle(wndX, wndY,
 				this.Size.Width, this.Size.Height);
@@ -362,12 +351,6 @@ namespace KeePass.Forms
 				new SortCommandHandler(this.SortPasswordList));
 			m_lvgmMenu = new ListViewGroupingMenu(m_menuViewEntryListGrouping, this);
 
-			if(MonoWorkarounds.IsRequired(1716) && (NativeLib.GetDesktopType() ==
-				DesktopType.Cinnamon))
-			{
-				mw.AlwaysOnTop = false;
-				UIUtil.SetEnabledFast(false, m_menuViewAlwaysOnTop);
-			}
 			UIUtil.SetChecked(m_menuViewAlwaysOnTop, mw.AlwaysOnTop);
 			EnsureAlwaysOnTopOpt();
 
@@ -404,8 +387,6 @@ namespace KeePass.Forms
 			{
 				double dSplitPos = mw.SplitterHorizontalFrac;
 				if(dSplitPos == double.Epsilon) dSplitPos = 0.8333;
-				if(MonoWorkarounds.IsRequired(686017))
-					m_splitHorizontal.Panel1MinSize = 35;
 				m_splitHorizontal.SplitterDistanceFrac = dSplitPos;
 
 				dSplitPos = mw.SplitterVerticalFrac;
@@ -453,8 +434,7 @@ namespace KeePass.Forms
 
 			// Workaround for .NET ToolStrip height bug;
 			// https://sourceforge.net/p/keepass/discussion/329220/thread/19e7c256/
-			Debug.Assert((m_toolMain.Height == 25) || DpiUtil.ScalingRequired ||
-				MonoWorkarounds.IsRequired(100001));
+			Debug.Assert((m_toolMain.Height == 25) || DpiUtil.ScalingRequired);
 			m_toolMain.LockHeight(true);
 
 			UpdateFindProfilesMenu(m_menuFindProfiles, true);
@@ -466,7 +446,6 @@ namespace KeePass.Forms
 			UpdateEntryMoveMenu(m_dynMoveToGroupCtx, true);
 
 			ApplyUICustomizations();
-			MonoWorkarounds.ApplyTo(this);
 			UpdateTrayIcon(false);
 			UpdateUIState(false);
 
@@ -522,13 +501,6 @@ namespace KeePass.Forms
 		private void OnFormShown(object sender, EventArgs e)
 		{
 			m_bFormShown = true;
-
-			if(MonoWorkarounds.IsRequired(620618))
-			{
-				PwGroup pg = GetCurrentEntries();
-				UpdateColumnsEx(false);
-				UpdateUI(false, null, false, null, true, pg, false);
-			}
 
 			MinimizeToTrayAtStartIfEnabled(false);
 
@@ -1246,13 +1218,6 @@ namespace KeePass.Forms
 				if(ofDlg.RequiresUIReinitialize)
 				{
 					UIUtil.Initialize(true);
-
-					if(MonoWorkarounds.IsRequired())
-					{
-						m_menuMain.Invalidate();
-						m_toolMain.Invalidate();
-						m_statusMain.Invalidate();
-					}
 				}
 
 				GlobalWindowManager.CustomizeFormHandleCreated(this, null, true);
@@ -1629,14 +1594,11 @@ namespace KeePass.Forms
 					long lCurTicks = utcNow.Ticks;
 					if((lCurTicks >= m_lLockAtTicks) || (lCurTicks >= m_lLockAtGlobalTicks))
 					{
-						bool bBlock = MonoWorkarounds.IsRequired(1527);
-						if(bBlock) BlockMainTimer(true);
 
 						if(Program.Config.Security.WorkspaceLocking.ExitInsteadOfLockingAfterTime)
 							OnFileExit(sender, e);
 						else LockAllDocuments(); // Might exit instead of locking
 
-						if(bBlock) BlockMainTimer(false);
 					}
 				}
 
@@ -2307,15 +2269,6 @@ namespace KeePass.Forms
 				Form fTop = GlobalWindowManager.TopWindow;
 				if((fTop != null) && (fTop != this))
 					fTop.Activate();
-				else
-				{
-					if(MonoWorkarounds.IsRequired(1760))
-					{
-						Control c = UIUtil.GetActiveControl(this);
-						if(((c == null) || (c == this)) && (m_cLastActive != null))
-							UIUtil.SetFocus(m_cLastActive, this, false);
-					}
-				}
 			}
 			catch(Exception) { Debug.Assert(false); }
 			finally { m_bInFormActivated = false; }
@@ -2323,11 +2276,6 @@ namespace KeePass.Forms
 
 		private void OnFormDeactivate(object sender, EventArgs e)
 		{
-			if(MonoWorkarounds.IsRequired(1760))
-			{
-				Control c = UIUtil.GetActiveControl(this);
-				if((c != null) && (c != this)) m_cLastActive = c;
-			}
 		}
 
 		private void OnToolsTriggers(object sender, EventArgs e)

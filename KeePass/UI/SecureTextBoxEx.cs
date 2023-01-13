@@ -116,13 +116,12 @@ namespace KeePass.UI
 		{
 			if(bEnable == this.UseSystemPasswordChar) return;
 
-			if(!MonoWorkarounds.IsRequired(5795))
-			{
+			
 				FontUtil.SetDefaultFont(this);
 
 				if(bEnable) FontUtil.AssignDefault(this);
 				else FontUtil.AssignDefaultMono(this, true);
-			}
+			
 
 			this.UseSystemPasswordChar = bEnable;
 			ShowCurrentText(-1, -1);

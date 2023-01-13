@@ -932,8 +932,6 @@ namespace KeePass.Forms
 				catch(Exception) { Debug.Assert(false); }
 			});
 
-			if(MonoWorkarounds.IsRequired(2140)) Application.DoEvents();
-
 			if(m_pwEditMode == PwEditMode.ViewReadOnlyEntry)
 			{
 				UIUtil.SetEnabledFast(false, m_ctxToolsUrlSelApp, m_ctxToolsUrlSelDoc,
@@ -2352,8 +2350,7 @@ namespace KeePass.Forms
 			AddOverrideUrlItem(l, "cmd://{SAFARI} \"{URL}\"",
 				AppLocator.SafariPath);
 
-			Debug.Assert(m_cmbOverrideUrl.InvokeRequired ||
-				MonoWorkarounds.IsRequired(373134));
+			Debug.Assert(m_cmbOverrideUrl.InvokeRequired);
 			VoidDelegate f = delegate()
 			{
 				try

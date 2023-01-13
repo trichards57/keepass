@@ -243,7 +243,6 @@ namespace KeePass.Plugins
             // When trying to resolve a non-existing token, Mono
             // terminates the whole process with a SIGABRT instead
             // of just throwing an ArgumentOutOfRangeException
-            if (MonoWorkarounds.IsRequired(9604)) return;
 
             Assembly asm = p.GetType().Assembly;
             if (asm == typeof(PluginManager).Assembly) { Debug.Assert(false); return; }

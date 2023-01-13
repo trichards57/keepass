@@ -127,7 +127,6 @@ namespace KeePass.Forms
         private void LoadAdvancedOptions()
         {
             bool? obNoMin = null;
-            if (MonoWorkarounds.IsRequired(1418)) obNoMin = true;
 
             m_lvAdvanced.Columns.Add(string.Empty); // Resize below
 
@@ -250,9 +249,7 @@ namespace KeePass.Forms
             m_strInitialTsRenderer = Program.Config.UI.ToolStripRenderer;
 
             bool? obNoMin = null;
-            if (MonoWorkarounds.IsRequired(1418)) obNoMin = true;
             bool? obNoFocus = null;
-            if (MonoWorkarounds.IsRequired(1976)) obNoFocus = true;
 
             m_lvGuiOptions.Columns.Add(KPRes.Options); // Resize below
 
@@ -399,8 +396,7 @@ namespace KeePass.Forms
 
             if (AppConfigEx.IsOptionEnforced(Program.Config.UI, "StandardFont"))
                 m_fcgList.Enabled = false;
-            if (AppConfigEx.IsOptionEnforced(Program.Config.UI, "PasswordFont") ||
-                MonoWorkarounds.IsRequired(5795))
+            if (AppConfigEx.IsOptionEnforced(Program.Config.UI, "PasswordFont"))
                 m_fcgPassword.Enabled = false;
         }
 
@@ -534,12 +530,7 @@ namespace KeePass.Forms
 
             bool? obNoSEv = null; // Allow read-only by enforced config
             string strSEvSuffix = string.Empty;
-            if (MonoWorkarounds.IsRequired(1378))
-            {
-                obNoSEv = true;
-                strSEvSuffix = " (" + KPRes.UnsupportedByMono + ")";
-            }
-
+            
             bool? obNoWin = null; // Allow read-only by enforced config
 
             m_cdxSecurityOptions.CreateItem(aceWL, "LockOnWindowMinimize",

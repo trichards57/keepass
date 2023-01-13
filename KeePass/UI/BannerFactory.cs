@@ -97,8 +97,6 @@ namespace KeePass.UI
 
 			Debug.Assert((nHeight == StdHeight) || DpiUtil.ScalingRequired ||
 				UISystemFonts.OverrideUIFont);
-			if(MonoWorkarounds.IsRequired(12525) && (nHeight > 0))
-				--nHeight;
 
 			if(bs == BannerStyle.Default) bs = Program.Config.UI.BannerStyle;
 			if(bs == BannerStyle.Default)

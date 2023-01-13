@@ -336,8 +336,6 @@ namespace KeePass.UI
 
         private string PreShowDialog()
         {
-            MonoWorkarounds.EnsureRecentlyUsedValid();
-
             string strPrevWorkDir = Directory.GetCurrentDirectory();
 
             string strNew = Program.Config.Application.GetWorkingDirectory(m_strContext);

@@ -223,8 +223,6 @@ namespace KeePassLib.Native
 
                     if (strStdInput != null)
                     {
-                        EnsureNoBom(p.StandardInput);
-
                         p.StandardInput.Write(strStdInput);
                         p.StandardInput.Close();
                     }
@@ -299,40 +297,6 @@ namespace KeePassLib.Native
             }
 
             return fnRun();
-        }
-
-        private static void EnsureNoBom(StreamWriter sw)
-        {
-            if (sw == null) { Debug.Assert(false); return; }
-            if (!MonoWorkarounds.IsRequired(1219)) return;
-
-            try
-            {
-                Encoding enc = sw.Encoding;
-                if (enc == null) { Debug.Assert(false); return; }
-                byte[] pbBom = enc.GetPreamble();
-                if ((pbBom == null) || (pbBom.Length == 0)) return;
-
-                // For Mono >= 4.0 (using Microsoft's reference source)
-                try
-                {
-                    FieldInfo fi = typeof(StreamWriter).GetField("haveWrittenPreamble",
-                        BindingFlags.Instance | BindingFlags.NonPublic);
-                    if (fi != null)
-                    {
-                        fi.SetValue(sw, true);
-                        return;
-                    }
-                }
-                catch (Exception) { Debug.Assert(false); }
-
-                // For Mono < 4.0
-                FieldInfo fiPD = typeof(StreamWriter).GetField("preamble_done",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                if (fiPD != null) fiPD.SetValue(sw, true);
-                else { Debug.Assert(false); }
-            }
-            catch (Exception) { Debug.Assert(false); }
         }
 
 #endif

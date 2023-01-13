@@ -99,16 +99,7 @@ namespace KeePass.UI
 		{
 			if(g_vTags != null) return;
 
-			// When running under Mono, replace bold and italic text
-			// by underlined text, which is rendered correctly (in
-			// contrast to bold and italic text)
 			string strOvrS = null, strOvrE = null;
-			if(MonoWorkarounds.IsRequired(1632))
-			{
-				strOvrS = "\\ul ";
-				strOvrE = "\\ul0 ";
-			}
-
 			List<RtfbTag> l = new List<RtfbTag>();
 			l.Add(new RtfbTag(null, (strOvrS ?? "\\b "), true, FontStyle.Bold));
 			l.Add(new RtfbTag(null, (strOvrE ?? "\\b0 "), false, FontStyle.Bold));
@@ -248,7 +239,7 @@ namespace KeePass.UI
 			// Windows: https://sourceforge.net/p/keepass/bugs/1780/
 			// Mono: https://bugzilla.novell.com/show_bug.cgi?id=586901
 			Dictionary<char, string> dEnc = new Dictionary<char, string>();
-			if(bURtf || MonoWorkarounds.IsRequired(586901))
+			if(bURtf)
 			{
 				StringBuilder sbEnc = new StringBuilder();
 
@@ -298,10 +289,6 @@ namespace KeePass.UI
 			{
 				strRtf = strRtf.Replace(rTag.IdCode, rTag.RtfCode);
 			}
-
-			if(bBracesBalanced && MonoWorkarounds.IsRequired(2449941153U))
-				strRtf = Regex.Replace(strRtf,
-					@"(\\)(\{[\u0020-\u005B\u005D-z\w\s]*?)(\})", "$1$2$1$3");
 
 			strRtf = StrUtil.RtfFix(strRtf);
 

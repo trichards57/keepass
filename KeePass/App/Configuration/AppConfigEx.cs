@@ -330,26 +330,6 @@ namespace KeePass.App.Configuration
                 aceMW.EscMinimizesToTray = false; // Default value
                 aceMW.EscAction = AceEscAction.MinimizeToTray;
             }
-
-            if (MonoWorkarounds.IsRequired(1378))
-            {
-                AceWorkspaceLocking aceWL = this.Security.WorkspaceLocking;
-                aceWL.LockOnSessionSwitch = false;
-                aceWL.LockOnSuspend = false;
-                aceWL.LockOnRemoteControlChange = false;
-            }
-
-            if (MonoWorkarounds.IsRequired(1418))
-            {
-                aceMW.MinimizeAfterOpeningDatabase = false;
-                this.Application.Start.MinimizedAndLocked = false;
-            }
-
-            if (MonoWorkarounds.IsRequired(1976))
-            {
-                aceMW.FocusQuickFindOnRestore = false;
-                aceMW.FocusQuickFindOnUntray = false;
-            }
         }
 
         internal void OnSavePre()

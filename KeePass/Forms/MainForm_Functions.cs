@@ -349,7 +349,6 @@ namespace KeePass.Forms
 
             Program.TriggerSystem.RaiseEvent(EcasEventIDs.AppExit);
 
-            MonoWorkarounds.Release(this);
             GlobalWindowManager.CustomizeFormHandleCreated(this, false, false);
 
             m_nClipClearCur = -1;
@@ -602,15 +601,10 @@ namespace KeePass.Forms
             DwmUtil.EnableWindowPeekPreview(this);
 
             bool bFormShownRaised = false;
-            if (MonoWorkarounds.IsRequired(801414))
-                bFormShownRaised = MonoWorkarounds.ExchangeFormShownRaised(this, false);
 
             // Clip the strings again (it could be that a translator used
             // a string in KPRes that is too long to be displayed)
             this.Text = StrUtil.CompactString3Dots(strWindowText, cchNtf);
-
-            if (MonoWorkarounds.IsRequired(801414))
-                MonoWorkarounds.ExchangeFormShownRaised(this, bFormShownRaised);
 
             strNtfText = StrUtil.EncodeToolTipText(strNtfText);
             m_ntfTray.Text = StrUtil.CompactString3Dots(strNtfText, cchNtf);
@@ -3329,7 +3323,7 @@ namespace KeePass.Forms
 
         private void AssignMenuShortcuts()
         {
-            bool bMoveMono = MonoWorkarounds.IsRequired(1245);
+            bool bMoveMono = false;
             Keys kMoveMod = (bMoveMono ? (Keys.Control | Keys.Shift) : Keys.Alt);
 
             UIUtil.AssignShortcut(m_menuFileNew, Keys.Control | Keys.N);
@@ -4103,7 +4097,7 @@ namespace KeePass.Forms
             foreach (Image img in m_lTabImages) img.Dispose();
             m_lTabImages.Clear();
 
-            bool bImgs = !MonoWorkarounds.IsRequired(891029);
+            bool bImgs = true;
 
             List<TabPage> lPages = new List<TabPage>();
             for (int i = 0; i < m_docMgr.Documents.Count; ++i)
@@ -4524,9 +4518,6 @@ namespace KeePass.Forms
             if (vEntries == null) { Debug.Assert(false); return; }
             if (vEntries.Length == 0) return;
 
-            if (MonoWorkarounds.IsRequired(1690) && (m_lvEntries.Items.Count != 0))
-                UIUtil.SetFocusedItem(m_lvEntries, m_lvEntries.Items[0], false);
-
             ++m_uBlockEntrySelectionEvent;
             m_lvEntries.BeginUpdateEx();
 
@@ -4711,14 +4702,11 @@ namespace KeePass.Forms
         {
             // Mono does not raise key events while Alt is down
             bool bMoveMod = e.Alt;
-            if (MonoWorkarounds.IsRequired(1245)) bMoveMod = (e.Control && e.Shift);
             if (!bMoveMod) return false;
 
             // Mono raises key events *after* changing the selection,
             // thus we cannot use any navigation keys
             Keys[] vMove = new Keys[] { Keys.Home, Keys.Up, Keys.Down, Keys.End };
-            if (MonoWorkarounds.IsRequired(1245))
-                vMove = new Keys[] { Keys.F5, Keys.F6, Keys.F7, Keys.F8 };
             int m = Array.IndexOf<Keys>(vMove, e.KeyCode);
             if (m < 0) return false;
 
@@ -6079,12 +6067,6 @@ namespace KeePass.Forms
                 FileTransactionEx.ClearOld();
             }
             catch (Exception) { Debug.Assert(false); }
-
-            // If the app configuration file is corrupted, an exception may
-            // be thrown in the try block above (XML serializer, ...),
-            // thus check it in a separate try block
-            try { Program.CheckExeConfig(); }
-            catch (Exception) { Debug.Assert(false); }
         }
 
         internal bool IsCommandTypeInvokable(MainAppState sContext, AppCommandType t)
@@ -6150,26 +6132,6 @@ namespace KeePass.Forms
             catch (Exception) { Debug.Assert(false); }
 
             return false;
-        }
-
-        protected override void SetVisibleCore(bool value)
-        {
-            if (MonoWorkarounds.IsRequired(3574233558U))
-            {
-                if (!value && m_bFormShown && (this.WindowState ==
-                    FormWindowState.Minimized))
-                {
-                    // Mono destroys window when trying to hide minimized
-                    // window; so, restore it before hiding
-                    RestoreWindowEx();
-                    Application.DoEvents();
-                    Thread.Sleep(250);
-                }
-
-                if (m_bFormShown) m_menuMain.Visible = value;
-            }
-
-            base.SetVisibleCore(value);
         }
 
         private void MoveOrCopySelectedEntries(PwGroup pgTo, DragDropEffects e)

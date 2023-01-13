@@ -162,7 +162,6 @@
     <Compile Include="Utility\MessageService.cs" />
     <Compile Include="Native\NativeLib.cs" />
     <Compile Include="Cryptography\PasswordGenerator\PwGenerator.cs" />
-    <Compile Include="Utility\MonoWorkarounds.cs" />
     <Compile Include="Utility\StrUtil.cs" />
     <Compile Include="Utility\TypeOverridePool.cs" />
     <Compile Include="Utility\UrlUtil.cs" />

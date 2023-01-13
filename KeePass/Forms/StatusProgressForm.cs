@@ -190,9 +190,6 @@ namespace KeePass.Forms
 		internal void CloseEx()
 		{
 			Close();
-
-			if(MonoWorkarounds.IsRequired(1710))
-				OnFormClosed(this, new FormClosedEventArgs(CloseReason.UserClosing));
 		}
 
 		private void OnFormClosed(object sender, FormClosedEventArgs e)

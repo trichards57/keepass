@@ -105,12 +105,12 @@ namespace KeePass.UI
 			{
 				bool bNtf = true;
 				if(NativeLib.GetPlatformID() == PlatformID.MacOSX)
-					bNtf = !MonoWorkarounds.IsRequired(1574);
+					bNtf = true;
 				else
 				{
 					DesktopType t = NativeLib.GetDesktopType();
 					if((t == DesktopType.Unity) || (t == DesktopType.Pantheon))
-						bNtf = !MonoWorkarounds.IsRequired(1354);
+						bNtf = true;
 				}
 
 				if(bNtf) m_ntf = new NotifyIcon(container);

@@ -72,10 +72,9 @@ namespace KeePass.UI
 				{
 					// Mono throws an exception when trying to get the
 					// Multiline property while constructing the object
-					if(!MonoWorkarounds.IsRequired())
-					{
+					
 						if(this.Multiline) cp.Style |= NativeMethods.ES_WANTRETURN;
-					}
+					
 				}
 
 				return cp;
@@ -304,8 +303,6 @@ namespace KeePass.UI
 
 					if(bHandled)
 					{
-						if(MonoWorkarounds.IsRequired(100002))
-							OnTextChanged(EventArgs.Empty);
 						return true;
 					}
 				}
@@ -563,7 +560,7 @@ namespace KeePass.UI
 		private void MonoRedrawOnScroll()
 		{
 			if(!m_bForceRedrawOnScroll.HasValue)
-				m_bForceRedrawOnScroll = MonoWorkarounds.IsRequired(1366);
+				m_bForceRedrawOnScroll = false;
 
 			if(m_bForceRedrawOnScroll.Value) Invalidate();
 		}
@@ -578,8 +575,7 @@ namespace KeePass.UI
 				// Open the URL if no handler has been associated with
 				// the LinkClicked event;
 				// if(this.LinkClicked == null) WinUtil.OpenUrl(str, null);
-				string strEv = (MonoWorkarounds.IsRequired() ? "LinkClickedEvent" :
-					"EVENT_LINKACTIVATE");
+				string strEv = 					"EVENT_LINKACTIVATE";
 				FieldInfo fi = typeof(RichTextBox).GetField(strEv,
 					BindingFlags.NonPublic | BindingFlags.Static);
 				object oEv = ((fi != null) ? fi.GetValue(null) : null);
