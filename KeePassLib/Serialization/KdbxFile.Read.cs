@@ -353,7 +353,6 @@ namespace KeePassLib.Serialization
 
 				case KdbxHeaderFieldID.MasterSeed:
 					m_pbMasterSeed = pbData;
-					CryptoRandom.Instance.AddEntropy(pbData);
 					break;
 
 				// Obsolete; for backward compatibility only
@@ -366,8 +365,6 @@ namespace KeePassLib.Serialization
 
 					// m_pbTransformSeed = pbData;
 					m_pwDatabase.KdfParameters.SetByteArray(AesKdf.ParamSeed, pbData);
-
-					CryptoRandom.Instance.AddEntropy(pbData);
 					break;
 
 				// Obsolete; for backward compatibility only
@@ -391,7 +388,6 @@ namespace KeePassLib.Serialization
 					Debug.Assert(m_uFileVersion < FileVersion32_4);
 					Debug.Assert(m_pbInnerRandomStreamKey == null);
 					m_pbInnerRandomStreamKey = pbData;
-					CryptoRandom.Instance.AddEntropy(pbData);
 					break;
 
 				case KdbxHeaderFieldID.StreamStartBytes:
@@ -463,7 +459,6 @@ namespace KeePassLib.Serialization
 				case KdbxInnerHeaderFieldID.InnerRandomStreamKey:
 					Debug.Assert(m_pbInnerRandomStreamKey == null);
 					m_pbInnerRandomStreamKey = pbData;
-					CryptoRandom.Instance.AddEntropy(pbData);
 					break;
 
 				case KdbxInnerHeaderFieldID.Binary:

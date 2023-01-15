@@ -5,3 +5,7 @@
 /Build
 obj/
 .vs
+/Translation/TrlUtil.pdb
+/Translation/TrlUtil.exe
+/Translation/KeePass.pdb
+/Translation/KeePass.exe

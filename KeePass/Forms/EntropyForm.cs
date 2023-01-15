@@ -135,7 +135,6 @@ namespace KeePass.Forms
 
 			byte[] pb = m_h.Hash;
 			m_pbEntropy = pb;
-			CryptoRandom.Instance.AddEntropy(pb);
 
 			m_h.Clear();
 			m_h = null;
