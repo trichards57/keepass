@@ -709,7 +709,7 @@ namespace KeePassLib.Utility
             if (strText == null) { Debug.Assert(false); return string.Empty; }
 
             string[] v = vParams;
-            if (v == null) { Debug.Assert(false); v = MemUtil.EmptyArray<string>(); }
+            if (v == null) { Debug.Assert(false); v = Array.Empty<string>(); }
             if (bEncParamsToArgs)
             {
                 for (int i = 0; i < v.Length; ++i)

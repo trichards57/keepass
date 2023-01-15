@@ -29,7 +29,7 @@ namespace KeePass.Ecas
 	{
 		public static EcasParameter[] EmptyArray
 		{
-			get { return MemUtil.EmptyArray<EcasParameter>(); }
+			get { return Array.Empty<EcasParameter>(); }
 		}
 
 		private string m_strName;

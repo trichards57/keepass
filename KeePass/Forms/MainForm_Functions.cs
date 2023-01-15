@@ -5914,7 +5914,7 @@ namespace KeePass.Forms
                 if (bAdd)
                     l = new List<string>(MemUtil.Union<string>(l, lToProcess, null));
                 else
-                    l = new List<string>(MemUtil.Except<string>(l, lToProcess, null));
+                    l = new List<string>(l.Except(lToProcess));
 
                 if (l.Count != cBefore)
                 {

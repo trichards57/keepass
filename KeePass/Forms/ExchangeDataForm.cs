@@ -354,7 +354,7 @@ namespace KeePass.Forms
 				// Allow only one file when exporting
 				if(m_bExport && !CheckFilePath(strFiles)) return false;
 			}
-			else vFiles = MemUtil.EmptyArray<string>();
+			else vFiles = Array.Empty<string>();
 
 			if(m_piExport != null)
 			{

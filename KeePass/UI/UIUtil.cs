@@ -1998,7 +1998,7 @@ namespace KeePass.UI
 
 		internal static int[] GetDisplayIndices(ListView lv)
 		{
-			if(lv == null) { Debug.Assert(false); return MemUtil.EmptyArray<int>(); }
+			if(lv == null) { Debug.Assert(false); return Array.Empty<int>(); }
 
 			int c = lv.Columns.Count;
 			int[] v = new int[c];

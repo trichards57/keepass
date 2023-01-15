@@ -477,7 +477,7 @@ namespace KeePass.Util
 			if(!strScheme.Equals(OtpAuthScheme, StrUtil.CaseIgnoreCmp))
 				throw new FormatException();
 
-			string[] vSeg = (uri.Segments ?? MemUtil.EmptyArray<string>());
+			string[] vSeg = (uri.Segments ?? Array.Empty<string>());
 
 			string strLabel = string.Empty;
 			if(vSeg.Length >= 2)

@@ -283,7 +283,7 @@ namespace KeePass.Util
 
 		internal static string[] MakeCtxIndependent(string[] vCmdLineArgs)
 		{
-			if(vCmdLineArgs == null) { Debug.Assert(false); return MemUtil.EmptyArray<string>(); }
+			if(vCmdLineArgs == null) { Debug.Assert(false); return Array.Empty<string>(); }
 
 			CommandLineArgs cl = new CommandLineArgs(vCmdLineArgs);
 			List<string> lFlt = new List<string>();
